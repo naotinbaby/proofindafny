@@ -215,7 +215,7 @@ ensures  ((n1+1)as real *power2(l)+(n2+1)as real*power2(m))/power2(p+m+l+2)==(se
     calc{
         ((n1+1)as real *power2(l)+(n2+1)as real*power2(m))/power2(p+m+l+2);
         (n1 as real *power2(l)+power2(l)+power2(m)*n2 as real+power2(m))/power2(p+m+l+2);
-        {checker(n1,l);}{checker2(n2,m);}
+        {checker1(n1,l);}{checker2(n2,m);}
         (set_z(n1,l)as real+set_z(n2,m) as real+power2(l)+power2(m))/power2(p+m+l+2);
     }
 }
@@ -247,7 +247,7 @@ ensures ((n1-1)as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2))==(set_z(n1,l
         ((n1-1)as real * power2(l)+(n2-1) as real*power2(m))/power2(p+m+l+2);
         (n1 as real *power2(l)-power2(l)+power2(m)*n2 as real-power2(m))/power2(p+m+l+2);
         (n1 as real*power2(l)+n2 as real *power2(m)-power2(l)-power2(m))/power2(p+m+l+2);
-        {checker(n1,l);}{checker2(n2,m);}
+        {checker1(n1,l);}{checker2(n2,m);}
         (set_z(n1,l)as real+set_z(n2,m)as real-power2(l)-power2(m))/power2(p+m+l+2);
         {mathpower(n1,n2,l,m,p,x1,x2);}
         (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2);
@@ -255,7 +255,7 @@ ensures ((n1-1)as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2))==(set_z(n1,l
 }
 
 
-lemma checker(n1:int,l:nat)
+lemma checker1(n1:int,l:nat)
 ensures n1 as real *power2(l)==set_z(n1,l)as real
 {}
 lemma checker2(n2:int,m:nat)
