@@ -47,6 +47,14 @@ ensures ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))+((power2(l)+po
         (r as real *power2(m+l+2))-power2(m+l+1);
     }
 }*/
+
+lemma circlecheck2(p:nat,l:nat,m:nat,r:int,x1:ISeq,x2:ISeq,n1:int,n2:int)
+requires n1==x1(p+m+2)
+requires n2==x2(p+l+2)
+requires r==(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor
+ensures (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)>((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2))
+
+
 ghost predicate DArrow(v: real, n: ISeq)
 {
     forall p: nat :: (n(p) - 1) as real / power2(p) < v < (n(p) + 1) as real / power2(p)
@@ -210,7 +218,7 @@ ensures -(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2))==-(power2(m+l
 lemma mathsup4(n1:int,n2:int,l:nat,m:nat,p:nat,x1:ISeq,x2:ISeq)
 requires n1==x1(p+m+2)
 requires n2==x2(p+l+2)
-ensures  ((n1+1)as real *power2(l)+(n2+1)as real*power2(m))/power2(p+m+l+2)==(set_z(n1,l)as real+set_z(n2,m) as real+power2(l)+power2(m))/power2(p+m+l+2);
+ensures  ((n1+1)as real *power2(l)+(n2+1)as real*power2(m))/power2(p+m+l+2)==(set_z(n1,l)as real+set_z(n2,m) as real+power2(l)+power2(m))/power2(p+m+l+2)
 {
     calc{
         ((n1+1)as real *power2(l)+(n2+1)as real*power2(m))/power2(p+m+l+2);
@@ -253,7 +261,25 @@ ensures ((n1-1)as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2))==(set_z(n1,l
         (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2);
     }
 }
-
+lemma mathsup5(p:nat,l:nat,m:nat,r:int,x1:ISeq,x2:ISeq,n1:int,n2:int)
+requires n1==x1(p+m+2)
+requires n2==x2(p+l+2)
+requires r==(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor
+ensures (1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2))==(power2(m+l+1)-power2(l)-power2(m))/power2(p+m+l+2)
+{
+    calc{
+        (1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2));
+        {powerpos3(p+1,m+l+1);}
+        (power2(m+l+1)/power2(p+m+l+2))-((power2(l)+power2(m))/power2(p+m+l+2));
+        {checker3(power2(l),power2(m),power2(p+m+l+2));}
+        (power2(m+l+1)/power2(p+m+l+2))+((-power2(l)-power2(m))/power2(p+m+l+2));
+        (power2(m+l+1)-power2(l)-power2(m))/power2(p+m+l+2);
+    }
+}
+lemma checker3(a:real,b:real,c:real)
+requires c!=0.0
+ensures -((a+b)/c)==(-a-b)/c
+{}
 
 lemma checker1(n1:int,l:nat)
 ensures n1 as real *power2(l)==set_z(n1,l)as real
@@ -268,7 +294,75 @@ requires n2==x2(p+l+2)
 ensures (set_z(n1,l)as real+set_z(n2,m)as real-power2(l)-power2(m))/power2(p+m+l+2)==(set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)
 {}
 
-lemma math (p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,r:int)
+lemma math2(p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,r:int)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+ensures ((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2)) < v1+v2
+{    
+    var n1:=x1(p+m+2) ;
+    var n2:=x2(p+l+2) ;
+    var r:=(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor;
+    /*calc{
+                  v1+v2;
+    >{DArrow2(r,p,v1,v2,m,l,x1,x2,n1,n2);}
+        ((n1-1)as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2));
+    =={mathsup3(n1,n2,l,m,p,x1,x2);}
+        (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2);
+    >={circlecheck2(p,l,m,r,x1,x2,n1,n2);}{abc(v1+v2,((n1-1)as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2)),((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2)));}
+        ((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2));
+    /*=={mathsup5(p,l,m,r,x1,x2,n1,n2);}
+         ((r as real+1.0)/power2(p))+(power2(m+l+1)-power2(l)-power2(m))/power2(p+m+l+2);
+    >={l04(m,l,p);}
+        (r as real-1.0)/power2(p);*/  
+    }*/
+    DArrow2(r,p,v1,v2,m,l,x1,x2,n1,n2);
+    assert v1+v2>((n1-1)as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2));
+    mathsup3(n1,n2,l,m,p,x1,x2);
+    assert ((n1-1)as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2))==(set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2);
+    assert v1+v2>(set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2);
+    circlecheck2(p,l,m,r,x1,x2,n1,n2);
+    assert (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)>=((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2));
+    assert v1+v2>((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2));
+    mathsup5(p,l,m,r,x1,x2,n1,n2);
+    assert ((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2)) ==((r as real-1.0)/power2(p))+(power2(m+l+1)-power2(l)-power2(m))/power2(p+m+l+2);
+    assert v1+v2>((r as real-1.0)/power2(p))+(power2(m+l+1)-power2(l)-power2(m))/power2(p+m+l+2);
+    assert ((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2)) < v1+v2;
+}
+
+lemma abc(a:real,b:real,c:real)
+requires a>b && b>=c
+ensures a>c
+{}
+
+/*lemma math3(p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,r:int)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+ensures v1+v2 < ((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2))
+{   
+    var n1:=x1(p+m+2) ;
+    var n2:=x2(p+l+2) ;
+    var r:=(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor;
+    calc{
+        v1+v2;
+    <{DArrow2(r,p,v1,v2,m,l,x1,x2,n1,n2);}
+        ((n1 as real+1.0)/power2(p+m+2))+((n2 as real+1.0)/power2(p+l+2));
+    =={mathsup2(n1,n2,l,m,p,x1,x2);}
+    //   ((n1+1)as real *power2(l)+(n2+1)as real*power2(m))/power2(p+m+l+2);
+    //=={mathsup4(n1,n2,l,m,p,x1,x2);}
+    //   (set_z(n1,l)as real+set_z(n2,m) as real+power2(l)+power2(m))/power2(p+m+l+2);
+    //==
+        ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))+((power2(l)+power2(m))/power2(p+m+l+2));
+    <{circlecheck(p,l,m,r,x1,x2,n1,n2);}
+        ((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2));
+    /*=={mathsup(p,l,m,r,x1,x2,n1,n2);}
+        ((r as real+1.0)/power2(p))-(power2(m+l+1)-power2(l)-power2(m))/power2(p+m+l+2);
+    <{l03(m,l,p);}
+        (r as real+1.0)/power2(p);*/
+    }
+}
+
+
+/*lemma math (p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,r:int)
 requires DArrow(v1,x1)
 requires DArrow(v2,x2)
 ensures DArrow(v1+v2,add_a(x1,x2,m,l))
@@ -284,6 +378,7 @@ ensures DArrow(v1+v2,add_a(x1,x2,m,l))
     =={mathsup2(n1,n2,l,m,p,x1,x2);}
     //   ((n1+1)as real *power2(l)+(n2+1)as real*power2(m))/power2(p+m+l+2);
     //=={mathsup4(n1,n2,l,m,p,x1,x2);}
+  
     //   (set_z(n1,l)as real+set_z(n2,m) as real+power2(l)+power2(m))/power2(p+m+l+2);
     //==
         ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))+((power2(l)+power2(m))/power2(p+m+l+2));
@@ -302,7 +397,7 @@ ensures DArrow(v1+v2,add_a(x1,x2,m,l))
         (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2);
     >={circle((set_z(n2,l)+set_z(n1,m)),power(m+l+2),r);}
         ((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2));
-    ==
+    == 
          ((r as real+1.0)/power2(p))+(power2(m+l+1)-power2(l)-power2(m))/power2(p+m+l+2);
     >={l04(m,l,p);}
         (r as real-1.0)/power2(p);  
