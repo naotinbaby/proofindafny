@@ -164,7 +164,7 @@ ensures power(n) as real/power(n) as real==power2(n)/power2(n)==1.0
     }
 }
 lemma powerpower'(n:nat)
-ensures power2(n)/power2(n)==0.0
+ensures power2(n)/power2(n)==1.0
 {
     if n==0{
     }else{
