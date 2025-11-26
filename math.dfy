@@ -219,12 +219,13 @@ requires n2==x2(p+l+2)
 requires r==(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor
 ensures ((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2))==((r as real+1.0)/power2(p))-(power2(m+l+1)-power2(l)-power2(m))/power2(p+m+l+2)
 {
-    assert (r as real + 1.0) / power2(p) - power2(m + l + 1) / power2(p + m + l + 2) - (-power2(l) - power2(m)) / power2(p + m + l + 2) == (r as real + 1.0) / power2(p) - (power2(m + l + 1) - power2(l) - power2(m)) / power2(p + m + l + 2);
+    //assert (r as real + 1.0) / power2(p) - power2(m + l + 1) / power2(p + m + l + 2) - (-power2(l) - power2(m)) / power2(p + m + l + 2) == (r as real + 1.0) / power2(p) - (power2(m + l + 1) - power2(l) - power2(m)) / power2(p + m + l + 2);
     calc{
         ((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2));
         {powerpos3(p+1,m+l+1);}
         ((r as real+1.0)/power2(p))-(power2(m+l+1)/power2(p+m+l+2))+((power2(l)+power2(m))/power2(p+m+l+2));
         ((r as real+1.0)/power2(p))-(power2(m+l+1)/power2(p+m+l+2))-((-power2(l)-power2(m))/power2(p+m+l+2));
+        {powerpos6(power2(m+l+1),power2(p+m+l+2),-power2(l)-power2(m));}
         ((r as real+1.0)/power2(p))-((power2(m+l+1))-power2(l)-power2(m))/power2(p+m+l+2);
     }
 }
