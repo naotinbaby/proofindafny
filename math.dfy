@@ -15,7 +15,7 @@ function set_z(n:int,p:nat):int{
 lemma circle(p: int, q: nat, n: int)
   requires q > 0
   requires n == ((p as real / q as real)+0.5).Floor
-  ensures (n as real - 0.5) * q as real <= p as real < (n as real + 0.5) * q as real
+  ensures (n as real  - 0.5) * q as real <= p as real < (n as real + 0.5) * q as real
 /*{
     calc{
         n as real-0.5 <=p as real/q as real <n as real+0.5;
@@ -163,6 +163,15 @@ ensures power(n) as real/power(n) as real==power2(n)/power2(n)==1.0
         power(n) as real*(1.0/power(n) as real);
     }
 }
+lemma powerpower'(n:nat)
+ensures power2(n)/power2(n)==0.0
+{
+    if n==0{
+    }else{
+        powerpower'(n-1);
+        assert power2(n-1)/power2(n-1)==1.0;
+    }
+}
 lemma powerpos5(a:real,b:real,c:real,d:real)
 requires b!=0.0
 requires d!=0.0
@@ -182,7 +191,10 @@ ensures 1.0/power2(n)==(1.0*power2(m))/power2(m+n)
         (1.0 *power2(m))/power2(m+n);
     }
 }
-
+lemma MulDivAssoc(a:real,b:real,c:real,d:real)
+requires b*d!=0.0
+ensures (a*c)/(b*d)==(a*c)/(b*d)
+{}
 lemma powerpos4(n:nat,m:nat,n1:real)
 ensures n1/power2(n)==(n1*power2(m))/power2(m+n)
 {
@@ -191,6 +203,7 @@ ensures n1/power2(n)==(n1*power2(m))/power2(m+n)
         (n1/power2(n))*1.0;
         {powerpower(m);}
         (n1/power2(n))*(power2(m)/power2(m));
+        {MulDivAssoc(n1,power2(n),power2(m),power2(m));}
         (n1*power2(m))/(power2(n)*power2(m));
         {powerpos2(n,m,power2(m));}
         (n1*power2(m))/power2(m+n);
