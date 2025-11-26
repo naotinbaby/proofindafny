@@ -242,6 +242,10 @@ ensures  ((n1+1)as real *power2(l)+(n2+1)as real*power2(m))/power2(p+m+l+2)==(se
         (set_z(n1,l)as real+set_z(n2,m) as real+power2(l)+power2(m))/power2(p+m+l+2);
     }
 }
+lemma mathsup7(a:real,b:real,c:real)
+requires c!=0.0
+ensures (a+b)/c==(a/c)+(b/c)
+{}
 lemma mathsup2(n1:int,n2:int,l:nat,m:nat,p:nat,x1:ISeq,x2:ISeq)
 requires n1==x1(p+m+2)
 requires n2==x2(p+l+2)
@@ -253,6 +257,7 @@ ensures ((n1+1)as real/power2(p+m+2))+((n2+1)as real/power2(p+l+2))==((set_z(n1,
         ((n1+1)as real *power2(l))/power2(p+m+l+2)+((n2+1)as real*power2(m))/power2(p+m+l+2);
         {mathsup4(n1,n2,l,m,p,x1,x2);}
         (set_z(n1,l)as real+set_z(n2,m) as real+power2(l)+power2(m))/power2(p+m+l+2);
+        {mathsup7(set_z(n1,l)as real+set_z(n2,m) as real,power2(l)+power2(m),power2(p+m+l+2));}
         ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))+((power2(l)+power2(m))/power2(p+m+l+2));
     }
 }
