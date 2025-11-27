@@ -31,22 +31,39 @@ ensures (set_z(n1,l) as real + set_z(n2,m) as real)>(r as real-0.5)*power2(m+l+2
 {
     circle((set_z(n1,l)+set_z(n2,m)),power(m+l+2),r);
 }*/
-
+lemma prop_frac2(a: real, b: real)
+    requires a != 0.0
+    ensures b/a + 1.0/(2.0*a) == (b+1.0)/a - 1.0/(2.0*a)
+{}
 
 lemma circlecheck(p:nat,l:nat,m:nat,r:int,x1:ISeq,x2:ISeq,n1:int,n2:int)
 requires n1==x1(p+m+2)
 requires n2==x2(p+l+2)
 requires r==(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor
-ensures ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))<((r as real+1.0)/power2(p))-(1.0/power2(p+1))
-/*{
-    calc{
-        ((set_z(n1,l) as real + set_z(n2,m) as real)/power2(p+m+l+2));
-    >{circle((set_z(n1,l)+set_z(n2,m)),power(m+l+2),r);}
-        ((r as real-1.0)/power2(p))+(1.0/power2(p+1));
-    ==
-        (r as real *power2(m+l+2))-power2(m+l+1);
-    }
-}*/
+ensures ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))+((power2(l)+power2(m))/power2(p+m+l+2))<((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2))
+{
+    var x := (set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real;
+    var y := (power2(l)+power2(m))/power2(p+m+l+2);
+    assert x - 0.5 < r as real;
+    assert x < 0.5 + r as real;
+    assert x / power2(p) as real < 0.5 / power2(p) + r as real/ power2(p);
+    assert x / power2(p) as real < 1.0 / power2(p+1) + r as real/ power2(p);
+    assert power2(p+1) == 2.0*power2(p);
+    assert x / power2(p) as real < 1.0 / (2.0*power2(p)) + r as real/ power2(p);
+    prop_frac2(power2(p) as real, r as real);
+    assert 1.0 / (2.0*power2(p)) + r as real/ power2(p) == (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real < (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real + y
+        < (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p)) + y;
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/(set_z(1,m+l+2) as real * power2(p));
+    checker1(1, m+l+2);
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/(power2(p) * power2(m+l+2));
+    powerpos(p, m+l+2);
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/power2(p+m+l+2);
+    assert
+       ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))+((power2(l)+power2(m))/power2(p+m+l+2))
+        < ((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2));
+}
 
 lemma circlecheck2(p:nat,l:nat,m:nat,r:int,x1:ISeq,x2:ISeq,n1:int,n2:int)
 requires n1==x1(p+m+2)
