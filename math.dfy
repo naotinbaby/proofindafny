@@ -141,7 +141,7 @@ function add_a(x1:ISeq,x2:ISeq,m:nat,l:nat):ISeq{
     (p:nat) => 
     var n1:=x1(p+m+2);
     var n2:=x2(p+l+2);
-    var r :=((((n1 as real)*power2(l)+(n2 as real)*power2(m))/power2(m+l+2))+0.5).Floor;
+    var r :=(((set_z(n1,l) as real+set_z(n2,m)as real)/power2(m+l+2))+0.5).Floor;
     r
 }
 
@@ -556,6 +556,19 @@ ensures (r as real-1.0)/power2(p) < v1+v2 < (r as real+1.0)/power2(p)
     math5(p,v1,v2,m,l,x1,x2,r,n1,n2);
     math4(p,v1,v2,m,l,x1,x2,r,n1,n2);
 }
+lemma mathsup10' (p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,r:int,n1:int,n2:int)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires  n1==x1(p+m+2) 
+requires  n2==x2(p+l+2) 
+requires  r==(((set_z(n1,l) as real +set_z(n2,m) as real)/power2(m+l+2))+0.5).Floor 
+ensures forall p:nat::
+        (add_a(x1,x2,m,l)(p) as real - 1.0)/power2(p)<v1+v2<(add_a(x1,x2,m,l)(p) as real +1.0)/power2(p)
+{
+    math5(p,v1,v2,m,l,x1,x2,r,n1,n2);
+    math4(p,v1,v2,m,l,x1,x2,r,n1,n2);
+}
+
 
 /*lemma mathcheck (p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,r:int,n1:int,n2:int)
 requires DArrow(v1,x1)
@@ -568,6 +581,12 @@ ensures DArrow(v1+v2,add_a(x1,x2,m,l))
 {
     mathsup10(p,v1,v2,m,l,x1,x2,r,n1,n2);
 }*/
+
+lemma Darrow3(x1:ISeq,x2:ISeq,m:nat,l:nat,v1:real,v2:real)
+requires forall p:nat::
+        (add_a(x1,x2,m,l)(p) as real - 1.0)/power2(p)<v1+v2<(add_a(x1,x2,m,l)(p) as real +1.0)/power2(p)
+ensures DArrow(v1+v2,add_a(x1,x2,m,l))
+{}
 
 lemma math (p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,r:int,n1:int,n2:int)
 requires DArrow(v1,x1)
@@ -583,7 +602,8 @@ ensures DArrow(v1+v2,add_a(x1,x2,m,l))
     var r:=(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor;*/
     //math5(p,v1,v2,m,l,x1,x2,r,n1,n2);
     //math4(p,v1,v2,m,l,x1,x2,r,n1,n2);
-    mathsup10(p,v1,v2,m,l,x1,x2,r,n1,n2);
+    mathsup10'(p,v1,v2,m,l,x1,x2,r,n1,n2);
+    Darrow3(x1,x2,m,l,v1,v2);
     /*calc{
         v1+v2;
     //<{DArrow2(r,p,v1,v2,m,l,x1,x2,n1,n2);}
