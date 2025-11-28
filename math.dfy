@@ -12,10 +12,10 @@ ensures power(n)>0
 function set_z(n:int,p:nat):int{
     power(p)*n
 }
-lemma circle(p: int, q: nat, n: int)
-  requires q > 0
-  requires n == ((p as real / q as real)+0.5).Floor
-  ensures (n as real  - 0.5) * q as real <= p as real < (n as real + 0.5) * q as real
+//lemma circle(p: int, q: nat, n: int)
+//  requires q > 0
+//  requires n == ((p as real / q as real)+0.5).Floor
+//  ensures (n as real  - 0.5) * q as real <= p as real < (n as real + 0.5) * q as real
 //{
     /*calc{
         n as real-0.5 <=p as real/q as real <n as real+0.5;
@@ -31,11 +31,50 @@ ensures (set_z(n1,l) as real + set_z(n2,m) as real)>(r as real-0.5)*power2(m+l+2
 {
     circle((set_z(n1,l)+set_z(n2,m)),power(m+l+2),r);
 }*/
+
+lemma circle(p: int, q: nat, n: int)
+    requires q > 0
+    requires n == ((p as real / q as real)+0.5).Floor
+    ensures (n as real - 0.5) * q as real <= p as real < (n as real + 0.5) * q as real
+// \left(n - \frac{1}{2}\right) \cdot q \le p < \left(n + \frac{1}{2}\right) \cdot q
+{
+    circle'(p as real, q as real, n);
+}
+
+lemma frac(a: real, b: real, c: real)
+    requires b > 0.0
+    requires a/b < c
+    ensures (a/b)*b < c*b
+// b > 0 \land \frac{a}{b} < c \Rightarrow \frac{a}{b}\cdot b < c \cdot b
+{}
+
+lemma circle'(p: real, q: real, n: int)
+    requires q > 0.0
+    requires n == ((p / q)+0.5).Floor
+    ensures (n as real - 0.5) * q <= p < (n as real + 0.5) * q
+// \left(n - \frac{1}{2}\right) \cdot q \le p < \left(n + \frac{1}{2}\right) \cdot q
+{
+    assert (p/q) - 0.5 < n as real <= (p/q) + 0.5;
+    assert n as real <= (p/q) + 0.5;
+    assert (p/q) - 0.5 < n as real;
+    assert n as real - 0.5 <= p/q;
+    assert p/q < n as real + 0.5;
+    assert (n as real - 0.5) * q <= p; // I don't know why but this line is also needed.
+    assert (p/q)*q <= p;
+    frac(p, q, n as real + 0.5); // This is needed!
+    assert (p/q)*q < (n as real + 0.5)*q;
+    assert p < (n as real + 0.5) * q;
+}
+ 
+
 lemma prop_frac2(a: real, b: real)
     requires a != 0.0
     ensures b/a + 1.0/(2.0*a) == (b+1.0)/a - 1.0/(2.0*a)
 {}
-
+lemma prop_frac3(a:real,b:real)
+requires a!=0.0
+ensures (b/a)-(1.0/(2.0*a))==((b-1.0)/a)+1.0/(2.0*a)
+{}
 lemma circlecheck(p:nat,l:nat,m:nat,r:int,x1:ISeq,x2:ISeq,n1:int,n2:int)
 requires n1==x1(p+m+2)
 requires n2==x2(p+l+2)
@@ -69,8 +108,30 @@ lemma circlecheck2(p:nat,l:nat,m:nat,r:int,x1:ISeq,x2:ISeq,n1:int,n2:int)
 requires n1==x1(p+m+2)
 requires n2==x2(p+l+2)
 requires r==(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor
-ensures (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)>((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2))
-
+ensures (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)>=((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2))
+{
+    var x := (set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real;
+    var y := (power2(l)+power2(m))/power2(p+m+l+2);
+    circle(set_z(n1,l)+set_z(n2,m),set_z(1,m+l+2),r);
+    assert x +0.5 >= r as real;
+    assert x >= -0.5 + r as real;
+    assert x / power2(p) as real >= -0.5 / power2(p) + r as real/ power2(p);
+    assert x / power2(p) as real >= -1.0 / power2(p+1) + r as real/ power2(p);
+    assert power2(p+1) == 2.0*power2(p);
+    assert x / power2(p) as real >= -1.0 / (2.0*power2(p)) + r as real/ power2(p);
+    prop_frac3(power2(p) as real, r as real);
+    assert -1.0 / (2.0*power2(p)) + r as real/ power2(p) == (r as real - 1.0) / power2(p) + 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real >= (r as real - 1.0) / power2(p) + 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real - y
+        <= (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p)) - y;
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/(set_z(1,m+l+2) as real * power2(p));
+    checker1(1, m+l+2);
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/(power2(p) * power2(m+l+2));
+    powerpos(p, m+l+2);
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/power2(p+m+l+2);
+    assert
+       (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)>=((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2));
+}
 
 ghost predicate DArrow(v: real, n: ISeq)
 {
@@ -210,7 +271,7 @@ ensures 1.0/power2(n)==(1.0*power2(m))/power2(m+n)
 }
 lemma MulDivAssoc(a:real,b:real,c:real,d:real)
 requires b*d!=0.0
-ensures (a*c)/(b*d)==(a*c)/(b*d)
+ensures (a/b)*(c/d)==(a*c)/(b*d)
 {}
 lemma powerpos4(n:nat,m:nat,n1:real)
 ensures n1/power2(n)==(n1*power2(m))/power2(m+n)
@@ -495,7 +556,7 @@ ensures (r as real-1.0)/power2(p) < v1+v2 < (r as real+1.0)/power2(p)
     math5(p,v1,v2,m,l,x1,x2,r,n1,n2);
     math4(p,v1,v2,m,l,x1,x2,r,n1,n2);
 }
-/*lemma math (p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq)
+lemma math (p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq)
 requires DArrow(v1,x1)
 requires DArrow(v2,x2)
 ensures DArrow(v1+v2,add_a(x1,x2,m,l))
@@ -504,8 +565,9 @@ ensures DArrow(v1+v2,add_a(x1,x2,m,l))
     var n1:=x1(p+m+2) ;
     var n2:=x2(p+l+2) ;
     var r:=(((set_z(n1,l) as real +set_z(n2,m) as real)/set_z(1,m+l+2) as real)+0.5).Floor;
-    math5(p,v1,v2,m,l,x1,x2,r,n1,n2);
-    math4(p,v1,v2,m,l,x1,x2,r,n1,n2);
+    //math5(p,v1,v2,m,l,x1,x2,r,n1,n2);
+    //math4(p,v1,v2,m,l,x1,x2,r,n1,n2);
+    mathsup10(p,v1,v2,m,l,x1,x2,r,n1,n2);
     /*calc{
         v1+v2;
     //<{DArrow2(r,p,v1,v2,m,l,x1,x2,n1,n2);}
