@@ -68,13 +68,15 @@ function abv (n:int):nat
     if n>=0 then n else -n
 }
 
-lemma DArrow2(r:int,p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,n1:int,n2:int)
+/*lemma DArrow2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
 requires DArrow(v1,x1)
 requires DArrow(v2,x2)
-requires n1==x1(p+m+2)
-requires n2==x2(p+l+2)
-ensures  ((n1-1) as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2))<v1+v2<((n1+1)as real/power2(p+m+2))+((n2+1)as real/power2(p+l+2))
-{}
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3
+ensures  (Min(Min((n1-1)*(n2-1),(n1-1)*(n2+1)),Min((n1+1)*(n2-1),(n1+1)*(n2+1)))) as real/power2(2*p+s1+s2+m+l)<v1*v2<(Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1)))) as real/power2(2*p+s1+s2+m+l)
+*/
 
 // Lemma 5
 lemma lmn5(n: nat, m: nat)
@@ -117,6 +119,66 @@ function Max(a:int,b:int):int
 {
     if a<b then b else a
 }
+
+lemma powerpos (n:nat,m:nat)
+ensures power2(n+m)==power2(n)*power2(m)
+{
+    if n==0{
+
+    }else{
+        if m==0{
+        }else{
+            powerpos(n-1,m-1);
+        }
+    }
+}
+
+lemma muldivpower(a:real,b:nat,c:real,d:nat)
+ensures (a/power2(b))*(c/power2(d))==(a*c)/power2(b+d)
+{
+    powerpos(b,d);
+}
+
+lemma powersup(n:int)
+ensures power2(n)>0.0
+{}
+lemma sup1sup1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3 
+//requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+ensures (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1-1)*(n2-1)
+         ==> v1*v2<(n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l))
+{
+    /*calc{
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
+    >=
+        (((n1-1)*(n2-1))as real)/power2(2*p+s1+s2+m+l);
+    =={muldivpower((n1-1)as real,p+s2+m,(n2-1)as real,p+s1+l);}
+        (((n1-1)as real)/power2(p+s2+m))*(((n2-1)as real)/power2(p+s1+l));
+    >
+        v1*v2;
+    }*/
+    if (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1-1)*(n2-1){
+    calc{
+        v1*v2;
+    <//{DArrow2(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2,r);}
+        (((n1-1)as real)/power2(p+s2+m))*(((n2-1)as real)/power2(p+s1+l));
+    =={muldivpower((n1-1)as real,p+s2+m,(n2-1)as real,p+s1+l);}
+     (((n1-1)*(n2-1))as real)/power2(2*p+s1+s2+m+l);
+    <=
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
+    }
+    }
+}
+
+
+
+
+
 lemma mult1sup1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
 requires DArrow(v1,x1)
 requires DArrow(v2,x2)
@@ -125,11 +187,11 @@ requires n2==x2(p+s1+l)
 requires s1== log2floor(abv(x1(z1))+2)+3
 requires s2== log2floor(abv(x2(z2))+2)+3 
 requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures v1*v2<(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l))
+ensures v1*v2<(n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l))
 {   
     if  (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1-1)*(n2-1){
     calc{
-        (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
     >=
         (((n1-1)*(n2-1))as real)/power2(2*p+s1+s2+m+l);
     ==
@@ -138,33 +200,37 @@ ensures v1*v2<(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power
         v1*v2;
     }
     }
-    else if  (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1-1)*(n2+1){
+    else if  (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1+1)*(n2-1){
     calc{
-        (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
     >=
-        (((n1-1)*(n2+1))as real)/power2(2*p+s1+s2+m+l);
+        (((n1+1)*(n2-1))as real)/power2(2*p+s1+s2+m+l);
     ==
-        (((n1-1)as real)/power2(p+s2+m))*(((n2+1)as real)/power2(p+s1+l));
+        (((n1+1)as real)/power2(p+s2+m))*(((n2-1)as real)/power2(p+s1+l));
     >
         v1*v2;
     }
     }
-    else if (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1+1)*(n2-1){
-    calc{
+    else if (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1+1)*(n2+1){
+    calc{        
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
+    >=
+        (((n1+1)*(n2+1))as real)/power2(2*p+s1+s2+m+l);
+    ==
+        (((n1+1)as real)/power2(p+s2+m))*(((n2+1)as real)/power2(p+s1+l));
+    >
         v1*v2;
-    <
-        ((n1+1)*(n2-1)) as real/power2(2*p+s1+s2+m+l);
-    <=
-        (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
     }
     }
     else{
     calc{
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
+    >=
+        ((n1-1)as real*(n2+1)as real)/power2(2*p+s1+s2+m+l);
+    ==
+        (((n1-1)as real)/power2(p+s2+m))*(((n2+1)as real)/power2(p+s1+l));
+    >
         v1*v2;
-    <
-        ((n1+1)*(n2+1)) as real/power2(2*p+s1+s2+m+l);
-    <=
-        (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
     }
     }
 }
