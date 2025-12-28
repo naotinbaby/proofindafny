@@ -4,10 +4,10 @@ ensures power2(n)>0.0
 {
     if n<=0 then 1.0 else 2.0*power2(n-1)
 } 
-function power (n:nat):nat
+function power (n:int):nat
 ensures power(n)>0
 {
-     if n==0 then 1 else 2*power(n-1)
+     if n<=0 then 1 else 2*power(n-1)
 }
 function set_z(n:int,p:nat):int{
     power(p)*n
@@ -194,6 +194,8 @@ requires  (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))
 ensures (((n1-1)as real)/power2(p+s2+m))*(((n2-1)as real)/power2(p+s1+l))>v1*v2
 {}*/
 
+
+
 lemma LessThanTrans(a: real, b: real, c: real)
     requires a < b
     requires b < c
@@ -206,17 +208,29 @@ lemma LessEqTrans(a: real, b: real, c: real)
     ensures a <= c
 {}
 
-// l1 <= 0.0 <= h2, l1 <= v1 <= h1, l2 <= 0.0 <= h2, l2 <= v2 <= h2
+lemma LessEqThanTrans(a: real, b: real, c: real)
+    requires a <= b
+    requires b < c
+    ensures a < c
+{}
+
+lemma LessThanEqTrans(a: real, b: real, c: real)
+    requires a < b
+    requires b <= c
+    ensures a < c
+{}
+
+// l1 <= 0.0 <= h1, l1 <= v1 <= h1, l2 <= 0.0 <= h2, l2 <= v2 <= h2
 lemma maxminMM(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires l2 <= v2 <= h2
+    requires l2 < v2 < h2
     requires l2 <= 0.0 <= h2
-    requires l1 <= v1 <= h1
+    requires l1 < v1 < h1
     requires l1 <= 0.0 <= h1
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
     var l11 := l1;
     var h11 := 0.0;
@@ -226,21 +240,33 @@ lemma maxminMM(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: re
     var h21 := 0.0;
     var l22 := 0.0;
     var h22 := h2;
-    if v1 <= 0.0 {
-        if v2 <= 0.0 {
+    if v1 < 0.0 {
+        if v2 < 0.0 {
             maxminNN(v1, v2, l11, h11, l21, h21, x, y);
-            assert x <= v1 * v2 <= y;
-        } else if 0.0 <= v2 {
+        } else if 0.0 < v2 {
             maxminNP(v1, v2, l11, h11, l22, h22, x, y);
-            assert x <= v1 * v2 <= y;
+        } else if v2 == 0.0 {
+        } else {
+            assert false;
         }
-    } else if 0.0 <= v1 {
-        if v2 <= 0.0 {
+    } else if 0.0 < v1 {
+        if v2 < 0.0 {
             maxminPN(v1, v2, l12, h12, l21, h21, x, y);
-            assert x <= v1 * v2 <= y;
-        } else if 0.0 <= v2 {
+        } else if 0.0 < v2 {
             maxminPP(v1, v2, l12, h12, l22, h22, x, y);
-            assert x <= v1 * v2 <= y;
+        } else if v2 == 0.0 {
+            assert l1 <= 0.0 < h1; // need to mention
+            assert l2 < 0.0 < h2;
+        } else {
+            assert false;
+        }
+    } else {
+        assert v1 == 0.0;
+        if v2 < 0.0 {
+        } else if 0.0 < v2 {
+        } else if v2 == 0.0 {
+        } else {
+            assert false;
         }
     }
 }
@@ -248,14 +274,14 @@ lemma maxminMM(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: re
 
 // l1 <= v1 <= h1 <= 0.0, l2 <= 0.0 <= h2, l2 <= v2 <= h2
 lemma maxminNM(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires l2 <= v2 <= h2
+    requires l2 < v2 < h2
     requires l2 <= 0.0 <= h2
-    requires l1 <= v1 <= h1 <= 0.0
+    requires l1 < v1 < h1 <= 0.0
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
 /*
     var l21 := l2;
@@ -273,14 +299,14 @@ lemma maxminNM(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: re
 
 // 0 <= l1 <= v1 <= h1, l2 <= 0.0 <= h2, l2 <= v2 <= h2
 lemma maxminPM(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires l2 <= v2 <= h2
+    requires l2 < v2 < h2
     requires l2 <= 0.0 <= h2
-    requires 0.0 <= l1 <= v1 <= h1
+    requires 0.0 <= l1 < v1 < h1
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
 /*
     var l21 := l2;
@@ -298,57 +324,63 @@ lemma maxminPM(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: re
 
 // l2 <= v2 <= h2 <= 0.0, l1 <= 0.0 <= h1, l1 <= v1 <= h1
 lemma maxminMN(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires l1 <= v1 <= h1
+    requires l1 < v1 < h1
     requires l1 <= 0.0 <= h1
-    requires l2 <= v2 <= h2 <= 0.0
+    requires l2 < v2 < h2 <= 0.0
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
     var l11 := l1;
     var h11 := 0.0;
     var l12 := 0.0;
     var h12 := h1;
-    if v1 <= 0.0 {
+    if v1 < 0.0 {
         maxminNN(v1, v2, l11, h11, l2, h2, x, y);
-    } else if 0.0 <= v1 {
+    } else if 0.0 < v1 {
         maxminPN(v1, v2, l12, h12, l2, h2, x, y);
+    } else if v1 == 0.0 {
+    } else {
+        assert false;
     }
 }
 
 // 0.0 <= l2 <= v2 <= h2, l1 <= 0.0 <= h1, l1 <= v1 <= h1
 lemma maxminMP(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires l1 <= v1 <= h1
+    requires l1 < v1 < h1
     requires l1 <= 0.0 <= h1
-    requires 0.0 <= l2 <= v2 <= h2
+    requires 0.0 <= l2 < v2 < h2
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
     var l11 := l1;
     var h11 := 0.0;
     var l12 := 0.0;
     var h12 := h1;
-    if v1 <= 0.0 {
+    if v1 < 0.0 {
         maxminNP(v1, v2, l11, h11, l2, h2, x, y);
-    } else if 0.0 <= v1 {
+    } else if 0.0 < v1 {
         maxminPP(v1, v2, l12, h12, l2, h2, x, y);
+    } else if v1 == 0.0 {
+    } else {
+        assert false;
     }
 }
 
 // l1 <= v1 <= h1 <= 0.0 <= l2 <= v2 <= h2
 lemma maxminNP(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires l1 <= v1 <= h1 <= 0.0
-    requires 0.0 <= l2 <= v2 <= h2
+    requires l1 < v1 < h1 <= 0.0
+    requires 0.0 <= l2 < v2 < h2
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
 /*
     assert v1 * v2 <= v1 * l2; // (l2 < v2) * v1
@@ -368,71 +400,71 @@ lemma maxminNP(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: re
 
 // l2 <= v2 <= h2 <= 0.0 <= l1 <= v1 <= h1
 lemma maxminPN(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires 0.0 <= l1 <= v1 <= h1
-    requires l2 <= v2 <= h2 <= 0.0
+    requires 0.0 <= l1 < v1 < h1
+    requires l2 < v2 < h2 <= 0.0
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
-    assert h1 * l2 <= h1 * v2; // (l2 <= v2) * h1
-    assert h1 * v2 <= v1 * v2; // (v1 <= h1) * v2
+    assert h1 * l2 < h1 * v2; // (l2 < v2) * h1
+    assert h1 * v2 < v1 * v2; // (v1 < h1) * v2
     LessEqTrans(h1 * l2, h1 * v2, v1 * v2);
-    assert h1 * l2 <= v1 * v2;
+    assert h1 * l2 < v1 * v2;
     
-    assert v1 * v2 <= v1 * h2; // (v2 <= h2) * v1
-    assert v1 * h2 <= l1 * h2; // (l1 <= v1) * h2
+    assert v1 * v2 < v1 * h2; // (v2 < h2) * v1
+    assert v1 * h2 <= l1 * h2; // (l1 < v1) * h2
     LessEqTrans(v1 * v2, v1 * h2, l1 * h2);
-    assert v1 * v2 <= l1 * h2;
+    assert v1 * v2 < l1 * h2;
     
-    assert x <= l2 * h1 <= v1 * v2 <= l1 * h2 <= y;
+    assert x <= l2 * h1 < v1 * v2 < l1 * h2 <= y;
 }
 
 // l1 <= v1 <= h1 <= 0.0, l2 <= v2 <= h2 <= 0.0
 lemma maxminNN(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires l1 <= v1 <= h1 <= 0.0
-    requires l2 <= v2 <= h2 <= 0.0
+    requires l1 < v1 < h1 <= 0.0
+    requires l2 < v2 < h2 <= 0.0
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
-    assert v1 * l2 <= l1 * l2; // (l1 <= v1) * l2
-    assert v1 * v2 <= v1 * l2; // (l2 <= v2) * v1
+    assert v1 * l2 <= l1 * l2; // (l1 < v1) * l2
+    assert v1 * v2 < v1 * l2; // (l2 < v2) * v1
     LessEqTrans(v1 * v2, v1 * l2, l1 * l2);
-    assert v1 * v2 <= l1 * l2;
+    assert v1 * v2 < l1 * l2;
     
-    assert h1 * h2 <= v1 * h2; // (v1 <= h1) * h2
-    assert v1 * h2 <= v1 * v2; // (v2 <= h2) * v1
-    LessEqTrans(h1 * h2, v1 * h2, v1 * v2);
-    assert h1 * h2 <= v1 * v2;
+    assert h1 * h2 <= v1 * h2; // (v1 < h1) * h2
+    assert v1 * h2 < v1 * v2; // (v2 < h2) * v1
+    LessEqThanTrans(h1 * h2, v1 * h2, v1 * v2);
+    assert h1 * h2 < v1 * v2;
 
-    assert x <= h1 * h2 <= v1 * v2 <= l1 * l2 <= y;
+    assert x <= h1 * h2 < v1 * v2 < l1 * l2 <= y;
 }
 
 // 0.0 <= l1 <= v1 <= h1, 0.0 <= l2 <= v2 <= h2
 lemma maxminPP(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real, y: real)
-    requires 0.0 <= l1 <= v1 <= h1
-    requires 0.0 <= l2 <= v2 <= h2
+    requires 0.0 <= l1 < v1 < h1
+    requires 0.0 <= l2 < v2 < h2
     requires x <= l1 * l2 <= y
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
-    assert v1 * h2 <= h1 * h2; // (v1 <= h1) * h2
-    assert v1 * v2 <= v1 * h2; // (v2 <= h2) * v1
-    LessEqTrans(v1 * v2, v1 * h2, h1 * h2);
-    assert v1 * v2 <= h1 * h2;
+    assert v1 * h2 < h1 * h2; // (v1 < h1) * h2
+    assert v1 * v2 < v1 * h2; // (v2 < h2) * v1
+    LessThanTrans(v1 * v2, v1 * h2, h1 * h2);
+    assert v1 * v2 < h1 * h2;
 
-    assert l1 * l2 <= v1 * l2; // (l1 <= v1) * l2
-    assert v1 * l2 <= v1 * v2; // (l2 <= v2) * v1
+    assert l1 * l2 <= v1 * l2; // (l1 < v1) * l2
+    assert v1 * l2 < v1 * v2; // (l2 < v2) * v1
     LessEqTrans(l1 * l2, v1 * l2, v1 * v2);
-    assert l1 * l2 <= v1 * v2;
+    assert l1 * l2 < v1 * v2;
     
-    assert x <= l1 * l2 <= v1 * v2 <= h1 * h2 <= y;
+    assert x <= l1 * l2 < v1 * v2 < h1 * h2 <= y;
 }
 
 
@@ -443,7 +475,8 @@ lemma maxmin(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real
     requires x <= l1 * h2 <= y
     requires x <= h1 * l2 <= y
     requires x <= h1 * h2 <= y
-    ensures x <= v1 * v2 <= y
+    // ensures x <= v1 * v2 <= y
+    ensures x < v1 * v2 < y
 {
     if 0.0 <= l1 {
         if 0.0 <= l2 {
@@ -457,12 +490,16 @@ lemma maxmin(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real
             maxminPN(v1, v2, l1, h1, l2, h2, x, y);
         }
     } else if l1 < 0.0 <= h1 {
+        // l1 < 0.0 <= h1
+        // l1 < v1 < h1
         if 0.0 <= l2 {
+            // 0.0 <= l2 < v2 < h2
             // min = l1*h2, max = h1*h2
             maxminMP(v1, v2, l1, h1, l2, h2, x, y);
         } else if l2 < 0.0 <= h2 {    
             // min = min{l1*h2, h1*l2}, max= max{l1*l2, h1*h2}
             maxminMM(v1, v2, l1, h1, l2, h2, x, y);
+            assert x < v1 * v2 < y;
         } else { // h2 < 0.0
             // min = h1*l2, max = l1*l2
             maxminMN(v1, v2, l1, h1, l2, h2, x, y);
@@ -480,6 +517,8 @@ lemma maxmin(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real
         }
     }
 }
+
+
 
  
 
@@ -560,7 +599,7 @@ requires n2==x2(p+s1+l)
 requires s1== log2floor(abv(x1(z1))+2)+3
 requires s2== log2floor(abv(x2(z2))+2)+3 
 requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))
+ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
 {
     //assert ((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))==((n1-1)as real*(n2-1)as real)/(power2(p+s2+m)*power2(p+s1+l));
     muldivpower((n1-1)as real,p+s2+m,(n2-1) as real ,p+s1+l);
@@ -575,7 +614,8 @@ requires n2==x2(p+s1+l)
 requires s1== log2floor(abv(x1(z1))+2)+3
 requires s2== log2floor(abv(x2(z2))+2)+3 
 requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))
+//ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))
+ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
 {
     //assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m)*power2(p+s1+l));
     muldivpower((n1-1)as real,p+s2+m,(n2+1) as real ,p+s1+l);
@@ -590,7 +630,8 @@ requires n2==x2(p+s1+l)
 requires s1== log2floor(abv(x1(z1))+2)+3
 requires s2== log2floor(abv(x2(z2))+2)+3 
 requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))
+//ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))
+ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
 {
     //assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m)*power2(p+s1+l));
     muldivpower((n1+1)as real,p+s2+m,(n2-1) as real ,p+s1+l);
@@ -605,7 +646,8 @@ requires n2==x2(p+s1+l)
 requires s1== log2floor(abv(x1(z1))+2)+3
 requires s2== log2floor(abv(x2(z2))+2)+3 
 requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))
+//ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))
+ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
 {
     //assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m)*power2(p+s1+l));
     muldivpower((n1+1)as real,p+s2+m,(n2+1) as real ,p+s1+l);
@@ -623,21 +665,178 @@ requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
 ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<v1*v2<(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l))
 {
     check1(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2,r);
-    assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l));
+    assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
+    //assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l));
     check2(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2,r);
-    assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l));
+    assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
+    //assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l));
     check3(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2,r);
-    assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l));
+    assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
+    //assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l));
     check4(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2,r);
-    assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l));
+    assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
+    //assert(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l));
+    
     /*assert ((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
     assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
     assert ((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
     assert ((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));*/
-    //maxmin(v1,v2,(n1-1) as real/power2(p+s2+m),(n1+1) as real/power2(p+s2+m),(n2-1) as real/power2(p+s1+l),(n2+1)as real/power2(p+s1+l),(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l)),(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l)));
+    maxmin(v1,v2,(n1-1) as real/power2(p+s2+m),(n1+1) as real/power2(p+s2+m),(n2-1) as real/power2(p+s1+l),(n2+1)as real/power2(p+s1+l),(n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l)),(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l)));
 
 }
 
+lemma prop_frac2(a: real, b: real)
+    requires a != 0.0
+    ensures b/a + 1.0/(2.0*a) == (b+1.0)/a - 1.0/(2.0*a)
+{}
+lemma prop_frac3(a:real,b:real)
+requires a!=0.0
+ensures (b/a)-(1.0/(2.0*a))==((b-1.0)/a)+1.0/(2.0*a)
+{}
+
+lemma divwork(a:real,b:nat,c:nat)
+ensures (a/power2(b))/power2(c)==a/power2(b+c)
+{
+    powerpos(b,c);
+}
+
+lemma circlecheck(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3 
+requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+ensures (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l))<((r as real+1.0)/power2(p))-((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)))
+{
+    assert (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l))==(((n1*n2) as real)/power2(2*p+s1+s2+m+l))+((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l));
+    var x := ((n1*n2) as real)/power2(p+s1+s2+m+l);
+    var y := ((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l));
+    assert x - 0.5 < r as real;
+    assert x < 0.5 + r as real;
+    assert x / power2(p) as real < 0.5 / power2(p) + r as real/ power2(p);
+    assert x / power2(p) as real < 1.0 / power2(p+1) + r as real/ power2(p);
+    assert power2(p+1) == 2.0*power2(p);
+    assert x / power2(p) as real < 1.0 / (2.0*power2(p)) + r as real/ power2(p);
+    prop_frac2(power2(p), r as real);
+    assert 1.0 / (2.0*power2(p)) + r as real/ power2(p) == (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real < (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real + y
+        < (r as real + 1.0) / power2(p) - (1.0 / (2.0*power2(p)) - y);
+    //assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/(power2(p+s1+s2+m+l) * power2(p));
+    //checker1(1, p+s1+s2+m+l);
+    divwork(n1 as real*n2 as real,p+s1+s2+m+l,p);
+    assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/(power2(p) * power2(p+s1+s2+m+l));
+    powerpos(p, p+s1+s2+m+l);
+    assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/power2(p+p+s1+s2+m+l);
+    //assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/power2(2*p+s1+s2+m+l);
+    assert ((n1 as real *n2 as real)/power2(2*p+s1+s2+m+l))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l))<((r as real+1.0)/power2(p))-((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)));
+    assert(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l))<((r as real+1.0)/power2(p))-((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)));
+}
+
+lemma circlecheck2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3 
+requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))>=((r as real-1.0)/power2(p))+((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)))
+{
+    assert (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))==(((n1*n2) as real)/power2(2*p+s1+s2+m+l))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l));
+    var x := ((n1*n2) as real)/power2(p+s1+s2+m+l);
+    var y := ((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l));
+    assert x +0.5 >= r as real;
+    assert x >= -0.5 + r as real;
+    assert x / power2(p) as real >= -0.5 / power2(p) + r as real/ power2(p);
+    assert x / power2(p) as real >= -1.0 / power2(p+1) + r as real/ power2(p);
+    assert power2(p+1) == 2.0*power2(p);
+    assert x / power2(p) as real >= -1.0 / (2.0*power2(p)) + r as real/ power2(p);
+    prop_frac3(power2(p) as real, r as real);
+    assert -1.0 / (2.0*power2(p)) + r as real/ power2(p) == (r as real - 1.0) / power2(p) + 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real >= (r as real - 1.0) / power2(p) + 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real - y
+        <=(r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p)) - y;
+    divwork(n1 as real*n2 as real,p+s1+s2+m+l,p);
+    assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/(power2(p) * power2(p+s1+s2+m+l));
+    powerpos(p, p+s1+s2+m+l);
+    assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/power2(p+p+s1+s2+m+l);
+    assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/power2(2*p+s1+s2+m+l);
+    assert
+       (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))>=((r as real-1.0)/power2(p))+((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)));
+}
+
+lemma lemma6(p:nat,p':nat,x:ISeq,v:real)
+requires DArrow(v,x)
+ensures (x(p')-1)*power(p-p')-1<x(p)<(x(p')+1)*power(p-p')+1
+
+lemma froml6(p:nat,p':nat,x:ISeq,v:real)
+requires DArrow(v,x)
+requires p>p'
+ensures abv(x(p))+1<power((p-p'))*(abv(x(p'))+2)
+{
+    lemma6(p,p',x,v);
+    assert x(p)<(x(p')+1)*power(p-p')+1;
+    assert abv(x(p))<(abv(x(p'))+1)*power(p-p')+1;
+    assert abv(x(p))+1<abv(x(p'))*power(p-p')+power(p-p')+2;
+    assert abv(x(p))+1<abv(x(p'))*power(p-p')+power(p-p'+1);
+    assert abv(x(p))+1<(abv(x(p'))+2)*power(p-p');
+    assert abv(x(p))+1<power((p-p'))*(abv(x(p'))+2);
+}
+
+lemma lemma5(n:int,m:nat)
+requires n==log2floor(m)
+ensures power(n)<=m<power(n)
+
+lemma following(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3
+ensures abv(n1)+1<power(p+s1+s2+m-z1-2)
+{
+    //assert s1-3==log2floor(abv(x1(z1))+2);
+    lemma5(s1-3,abv(x1(z1))+2);
+    //assert abv(x1(z1))+2<power(s1-2);
+}
+
+
+lemma following2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3
+ensures abv(n2)+1<power(p+s1+s2+l-z1-2)
+{
+    lemma5(s2-3,abv(x2(z2))+2);
+}
+
+
+/*lemma mult2sup1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3 
+requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+ensures abv(n1)+abv(n2)+1<=power(p+s1+s2+m+l-1)
+{
+
+}
+
+/*lemma mult2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3 
+requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+ensures (r-1) as real/power2(p)<v1*v2<(r+1) as real/power2(p)
+{}
 
 lemma mult(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
 requires DArrow(v1,x1)
