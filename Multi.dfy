@@ -2,10 +2,19 @@ type ISeq = nat->int
 function power2 (n:int):real
 ensures power2(n)>0.0
 {
-    if n<=0 then 1.0 else 2.0*power2(n-1)
+    if n==0 then 1.0 else if n>0 then 2.0*power2(n-1) else power2'(n)
 } 
+
+function power2'(n:int):real
+requires n<=0
+ensures 0.0<power2'(n)<=1.0
+decreases -n
+{
+    if n==0 then 1.0 else 0.5*power2'(n+1)
+}
+
 function power (n:int):nat
-ensures power(n)>0
+ensures power(n)>=1
 {
      if n<=0 then 1 else 2*power(n-1)
 }
@@ -13,7 +22,9 @@ function set_z(n:int,p:nat):int{
     power(p)*n
 }
 
-
+lemma powersup'(n:nat)
+ensures power2(n)>=1.0
+{}
 
 lemma circle(p: int, q: nat, n: int)
     requires q > 0
@@ -131,6 +142,22 @@ ensures power2(n+m)==power2(n)*power2(m)
         }else{
             powerpos(n-1,m-1);
         }
+    }
+}
+
+lemma powerpos' (n:nat,m:int)
+ensures power2(n+m)==power2(n)*power2(m)
+{
+    if n==0{
+    }else{
+        if m==0{
+
+        }else if m<0{
+            powerpos'(n-1,m+1);
+        }else{
+            powerpos(n-1,m);
+        }
+
     }
 }
 
@@ -601,9 +628,11 @@ requires s2== log2floor(abv(x2(z2))+2)+3
 requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
 ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
 {
-    //assert ((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))==((n1-1)as real*(n2-1)as real)/(power2(p+s2+m)*power2(p+s1+l));
+    powersup'(p+s1+l);
+    powersup'(p+s2+m);
+    assert ((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))==((n1-1)as real*(n2-1)as real)/(power2(p+s2+m)*power2(p+s1+l));
     muldivpower((n1-1)as real,p+s2+m,(n2-1) as real ,p+s1+l);
-    //assert ((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))==((n1-1)as real*(n2-1)as real)/(power2(p+s2+m+p+s1+l));
+    assert ((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))==((n1-1)as real*(n2-1)as real)/(power2(p+s2+m+p+s1+l));
 }
 
 lemma check2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
@@ -783,6 +812,7 @@ ensures abv(x(p))+1<power((p-p'))*(abv(x(p'))+2)
 }
 
 lemma lemma5(n:int,m:nat)
+requires m>0
 requires n==log2floor(m)
 ensures power(n)<=m<power(n)
 
@@ -808,11 +838,28 @@ requires n1==x1(p+s2+m)
 requires n2==x2(p+s1+l)
 requires s1== log2floor(abv(x1(z1))+2)+3
 requires s2== log2floor(abv(x2(z2))+2)+3
-ensures abv(n2)+1<power(p+s1+s2+l-z1-2)
+ensures abv(n2)+1<power(p+s1+s2+l-z2-2)
 {
     lemma5(s2-3,abv(x2(z2))+2);
 }
 
+lemma thus (v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3
+ensures abv(n1)+abv(n2)+1<power(p+s1+s2+m+l-1)
+{
+    following(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2);
+    following2(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2);
+    assert abv(n1)+1+abv(n2)+1<power(p+s1+s2+m-z1-2)+power(p+s1+s2+l-z2-2);
+    powerpos'(p+s1+s2-2,m-z1);
+    powerpos'(p+s1+s2-2,l-z2);
+    assert abv(n1)+abv(n2)+1<(power(p+s1+s2-2))*(power(m-z1)+power(l-z2))-1;
+    assert abv(n1)+abv(n2)+1<power(p+s1+s2+m+l-1);
+}
 
 /*lemma mult2sup1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
 requires DArrow(v1,x1)
