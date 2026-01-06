@@ -1,4 +1,5 @@
 type ISeq = nat->int
+// function power2 (n:int):real
 function power2 (n:nat):real
 ensures power2(n)>0.0
 {
@@ -12,6 +13,132 @@ decreases -n
 {
     if n==0 then 1.0 else 0.5*power2'(n+1)
 }
+
+function power2int(n: int): real
+{
+    if n >= 0 then power2nat(n as nat)
+    else 1.0 / power2nat(-n as nat)
+}
+lemma power2intorder(n: int, m: int)
+    requires n >= m
+    ensures power2int(n) >= power2int(m)
+    decreases n - m
+{
+    if n == m {
+    } else if n > m {
+        power2intorder(n - 1, m);
+    } else if n < m {
+        assert false;
+    }
+}
+lemma powerpower2int(n: nat)
+    requires n >= 0
+    ensures power(n) as real == power2int(n)
+{}
+function power2nat(n: nat): real
+    ensures power2nat(n) > 0.0
+{
+    if n == 0 then 1.0 else 2.0 * power2nat(n - 1)
+}
+lemma power2natpos(m: nat, n: nat)
+    ensures power2nat(m + n) == power2nat(m) * power2nat(n)
+{
+    if m == 0 {
+    } else {
+        if n == 0 {
+        } else {
+            power2natpos(m - 1, n - 1);
+        }
+    }
+}
+lemma power2natpos101(m: nat, n: nat)
+    requires m <= n
+    ensures power2nat(n - m) == (1.0/power2nat(m)) * power2nat(n)
+{
+    if m == 0 {
+    } else {
+        if n == 0 {
+        } else {
+            power2natpos101(m - 1, n - 1);
+        }
+    }
+}
+lemma power2natpos001(m: nat, n: nat)
+    requires m >= n
+    ensures 1.0/power2nat(m - n) == (1.0/power2nat(m)) * power2nat(n)
+{
+    if m == 0 {
+    } else {
+        if n == 0 {
+        } else {
+            power2natpos001(m - 1, n - 1);
+        }
+    }
+}
+lemma power2natpos110(m: nat, n: nat)
+    requires m >= n
+    ensures power2nat(m - n) == power2nat(m) * (1.0/power2nat(n))
+{
+    if m == 0 {
+    } else {
+        if n == 0 {
+        } else {
+            power2natpos110(m - 1, n - 1);
+        }
+    }
+}
+lemma power2natpos010(m: nat, n: nat)
+    requires n >= m
+    ensures 1.0/power2nat(n - m) == power2nat(m) * (1.0/power2nat(n))
+{
+    if m == 0 {
+    } else if m > 0 {
+        if n == 0 {
+        } else if n > 0 {
+            power2natpos010(m - 1, n - 1);
+        }
+    }
+}
+lemma power2natpos000(m: nat, n: nat)
+    ensures 1.0/power2nat(m + n) == (1.0/power2nat(m)) * (1.0/power2nat(n))
+{
+    if m == 0 {
+    } else if m > 0 {
+        if n == 0 {
+        } else if n > 0 {
+            power2natpos000(m - 1, n - 1);
+        }
+    }
+}
+lemma power2intpos(m: int, n: int)
+    ensures power2int(m + n) == power2int(m) * power2int(n)
+{
+    var pmn: real;
+    var pm: real;
+    var pn: real;
+    if n >= 0 {
+        if m >= 0 {
+            power2natpos(m, n);
+        } else if m < 0 {
+            if m + n >= 0 {
+                power2natpos101((-m) as nat, n);
+            } else if m + n < 0 {
+                power2natpos001((-m) as nat, n);
+            }
+        }
+    } else if n < 0 {
+        if m >= 0 {
+            if m + n >= 0 {
+                power2natpos110(m, (-n) as nat);
+            } else if m + n < 0 {
+                power2natpos010(m, (-n) as nat);
+            }
+        } else if m < 0 {
+            power2natpos000((-m) as nat, (-n) as nat);
+        }
+    }
+}
+
 
 function power (n:int):nat
 ensures power(n)>=1
@@ -91,10 +218,10 @@ ensures  (Min(Min((n1-1)*(n2-1),(n1-1)*(n2+1)),Min((n1+1)*(n2-1),(n1+1)*(n2+1)))
 
 
 // Lemma 5
-lemma lmn5(n: nat, m: nat)
+lemma {:axiom} lma5(n: nat, m: nat)
     requires m > 0
-    // ensures n == log2(m).Floor ==> power2(n) as real <= m <= power2(n+1) as real
-    ensures n == log2floor(m) ==> power(n) <= m <= power(n+1)
+    requires n == log2floor_org(m)
+    ensures power(n) <= m < power(n+1)
 
 function searchi(m: nat, lowi: nat, maxi: nat, ans: nat): nat
     requires lowi > 0
@@ -105,14 +232,62 @@ function searchi(m: nat, lowi: nat, maxi: nat, ans: nat): nat
     else searchi(m, lowi*2, maxi, ans+1)
 }
 
-function log2floor(m: nat): nat
+function log2floor_org(m: nat): nat
     requires m > 0
 {
     searchi(m, 1, power(m), 0)
 }
 
+function log2floor(m: nat): nat
+    requires m > 0
+{
+    // log2floor_org(m)
+    log2floor_new(m)
+}
 
- 
+method testlog2floor()
+{
+    assert log2floor_org(1) == log2floor_new(1);
+    assert log2floor_org(2) == log2floor_new(2);
+    assert log2floor_org(3) == log2floor_new(3);
+    assert log2floor_org(4) == log2floor_new(4);
+    assert log2floor_org(5) == log2floor_new(5);
+    assert log2floor_org(6) == log2floor_new(6);
+    assert log2floor_org(7) == log2floor_new(7);
+    assert log2floor_org(8) == log2floor_new(8);
+    assert log2floor_org(9) == log2floor_new(9);
+    assert log2floor_org(10) == log2floor_new(10);
+    assert log2floor_org(11) == log2floor_new(11);
+}
+
+
+lemma lma5'(n: nat, m: nat)
+    requires m > 0
+    requires n == log2floor_new(m)
+    ensures power(n) <= m < power(n+1)
+{}
+
+function log2floor_new(m: nat): nat
+    requires m > 0
+    // ensures power2(log2floor_new(m)) <= m as real < power2(log2floor_new(m)+1)
+    ensures power(log2floor_new(m)) <= m < power(log2floor_new(m)+1)
+{
+    searchinterval(m, 1, 0)
+}
+
+function searchinterval(m: nat, lo: nat, cnt: nat): nat
+    requires 0 < lo <= m
+    // requires power2(cnt) == lo as real
+    requires power(cnt) == lo
+    // ensures power2(searchinterval(m, lo, cnt)) <= m as real < power2(searchinterval(m, lo, cnt)+1)
+    ensures power(searchinterval(m, lo, cnt)) <= m < power(searchinterval(m, lo, cnt)+1)
+    decreases m - lo
+{
+    if lo <= m < 2*lo then cnt
+    else searchinterval(m, 2*lo, cnt+1)
+}
+
+
 
 /*lemma DArrowMul(r:int,p:nat,v1:real,v2:real,m:nat,l:nat,x1:ISeq,x2:ISeq,n1:int,n2:int,s1:nat,s2:nat)
 requires DArrow(v1,x1)
@@ -124,12 +299,25 @@ ensures  ((n1-1) as real/power2(p+m+2))+((n2-1)as real/power2(p+l+2))<v1+v2<((n1
 
 function Min(a:int,b:int):int
 {
-    if a<b then a else b
+    if a < b then a else b
 }
 
 function Max(a:int,b:int):int
 {
-    if a<b then b else a
+    if a < b then b else a
+}
+
+// lemma power1pos(n: nat, m: int)
+lemma power1pos(n: nat, m: nat)
+    ensures power(n + m) == power(n) * power(m)
+{
+    if n == 0 {
+    } else {
+        if m == 0 {
+        } else {
+            power1pos(n - 1, m - 1);
+        }
+    }
 }
 
 lemma powerpos (n:nat,m:nat)
@@ -145,6 +333,7 @@ ensures power2(n+m)==power2(n)*power2(m)
     }
 }
 
+// lemma powerpos' (n:nat,m:int)
 lemma powerpos' (n:nat,m:nat)
 ensures power2(n+m)==power2(n)*power2(m)
 {
@@ -152,7 +341,7 @@ ensures power2(n+m)==power2(n)*power2(m)
     }else{
         if m==0{
 
-        }else if m<0{
+        }else if m < 0{
             powerpos'(n-1,m+1);
         }else{
             powerpos(n-1,m);
@@ -169,8 +358,13 @@ ensures (a / power2(b)) * (c / power2(d)) == (a*c) / power2(b+d)
     assert (a / power2(b)) * (c / power2(d)) == (a*c) / power2(b+d);
 }
 
+lemma power1sup(n: nat)
+    ensures power(n) > 0
+{}
+
+// lemma powersup(n:int)
 lemma powersup(n:nat)
-ensures power2(n)>0.0
+ensures power2(n) > 0.0
 {}
 /*lemma sup1sup1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
 requires DArrow(v1,x1)
@@ -547,74 +741,86 @@ lemma maxmin(v1: real, v2: real, l1: real, h1: real, l2: real, h2: real, x: real
     }
 }
 
+
+
+ 
+
+/*lemma mult1sup1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3 
+requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+ensures v1*v2<(n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l))
+{   
+    /*if  (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1-1)*(n2-1){
+    calc{
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
+    >=
+        (((n1-1)*(n2-1))as real)/power2(2*p+s1+s2+m+l);
+    ==
+        (((n1-1)as real)/power2(p+s2+m))*(((n2-1)as real)/power2(p+s1+l));
+    >
+        v1*v2;
+    }
+    }
+    else if  (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1+1)*(n2-1){
+    calc{
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
+    >=
+        (((n1+1)*(n2-1))as real)/power2(2*p+s1+s2+m+l);
+    ==
+        (((n1+1)as real)/power2(p+s2+m))*(((n2-1)as real)/power2(p+s1+l));
+    >
+        v1*v2;
+    }
+    }
+    else if (Max(Max((n1-1)*(n2-1),(n1-1)*(n2+1)),Max((n1+1)*(n2-1),(n1+1)*(n2+1))))==(n1+1)*(n2+1){
+    calc{        
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
+    >=
+        (((n1+1)*(n2+1))as real)/power2(2*p+s1+s2+m+l);
+    ==
+        (((n1+1)as real)/power2(p+s2+m))*(((n2+1)as real)/power2(p+s1+l));
+    >
+        v1*v2;
+    }
+    }
+    else{
+    calc{
+        (n1*n2+abv(n1)+abv(n2)+1)as real/(power2(2*p+s1+s2+m+l));
+    >=
+        ((n1-1)as real*(n2+1)as real)/power2(2*p+s1+s2+m+l);
+    ==
+        (((n1-1)as real)/power2(p+s2+m))*(((n2+1)as real)/power2(p+s1+l));
+    >
+        v1*v2;
+    }
+    }*/
+    
+}
+
+lemma mult1sup2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires n1==x1(p+s2+m)
+requires n2==x2(p+s1+l)
+requires s1== log2floor(abv(x1(z1))+2)+3
+requires s2== log2floor(abv(x2(z2))+2)+3 
+requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<v1*v2
+{}
+*/
+
 lemma prop_frac1(a: real, b: real, c: real, d: real)
     requires c > 0.0
     requires d > 0.0
     ensures (a*b) / (c*d) == (a/c) * (b/d)
 {}
+
 lemma check1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3 
-requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
-{
-    assert ((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))==((n1-1)as real*(n2-1)as real)/(power2(p+s2+m)*power2(p+s1+l));
-    muldivpower((n1-1)as real,p+s2+m,(n2-1) as real ,p+s1+l);
-    assert ((n1-1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))==((n1-1)as real*(n2-1)as real)/(power2(p+s2+m+p+s1+l));
-}
-
-lemma check2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3 
-requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-//ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))
-ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
-{
-    //assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m)*power2(p+s1+l));
-    muldivpower((n1-1)as real,p+s2+m,(n2+1) as real ,p+s1+l);
-    //assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m+p+s1+l));
-}
-
-lemma check3(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3 
-requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-//ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))
-ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2-1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
-{
-    //assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m)*power2(p+s1+l));
-    muldivpower((n1+1)as real,p+s2+m,(n2-1) as real ,p+s1+l);
-    //assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m+p+s1+l));
-}
-
-lemma check4(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3 
-requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-//ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))
-ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))<=((n1+1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))<=(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l));
-{
-    //assert ((n1-1) as real/power2(p+s2+m))*((n2+1) as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m)*power2(p+s1+l));
-    muldivpower((n1+1)as real,p+s2+m,(n2+1) as real ,p+s1+l);
-    //assert ((n1-1) as real/power2(p+s2+m))*((n2+1)as real/power2(p+s1+l))==((n1-1)as real*(n2+1)as real)/(power2(p+s2+m+p+s1+l));
-}
-/*lemma check1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
 requires DArrow(v1,x1)
 requires DArrow(v2,x2)
 requires n1==x1(p+s2+m)
@@ -771,7 +977,7 @@ ensures
     // assert (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(x+y))
     // <= (a/power2(x))*(b/power2(y))
     // <= (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(x+y)); // goal
-}*/
+}
 
 // lemma mult1 (v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
 // requires DArrow(v1,x1)
@@ -819,7 +1025,69 @@ ensures (a/power2(b))/power2(c)==a/power2(b+c)
     powerpos(b,c);
 }
 
-
+// lemma circlecheck(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+// requires n1==x1(p+s2+m)
+// requires n2==x2(p+s1+l)
+// requires s1== log2floor(abv(x1(z1))+2)+3
+// requires s2== log2floor(abv(x2(z2))+2)+3 
+// requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+// ensures (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l))<((r as real+1.0)/power2(p))-((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)))
+// {
+//     assert (n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l))==(((n1*n2) as real)/power2(2*p+s1+s2+m+l))+((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l));
+//     var x := ((n1*n2) as real)/power2(p+s1+s2+m+l);
+//     var y := ((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l));
+//     assert x - 0.5 < r as real;
+//     assert x < 0.5 + r as real;
+//     assert x / power2(p) as real < 0.5 / power2(p) + r as real/ power2(p);
+//     assert x / power2(p) as real < 1.0 / power2(p+1) + r as real/ power2(p);
+//     assert power2(p+1) == 2.0*power2(p);
+//     assert x / power2(p) as real < 1.0 / (2.0*power2(p)) + r as real/ power2(p);
+//     prop_frac2(power2(p), r as real);
+//     assert 1.0 / (2.0*power2(p)) + r as real/ power2(p) == (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p));
+//     assert x / power2(p) as real < (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p));
+//     assert x / power2(p) as real + y
+//         < (r as real + 1.0) / power2(p) - (1.0 / (2.0*power2(p)) - y);
+//     //assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/(power2(p+s1+s2+m+l) * power2(p));
+//     //checker1(1, p+s1+s2+m+l);
+//     divwork(n1 as real*n2 as real,p+s1+s2+m+l,p);
+//     assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/(power2(p) * power2(p+s1+s2+m+l));
+//     powerpos(p, p+s1+s2+m+l);
+//     assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/power2(p+p+s1+s2+m+l);
+//     //assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/power2(2*p+s1+s2+m+l);
+//     assert ((n1 as real *n2 as real)/power2(2*p+s1+s2+m+l))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l))<((r as real+1.0)/power2(p))-((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)));
+//     assert(n1 as real*n2 as real+abv(n1) as real+abv(n2) as real+1.0)/(power2(2*p+s1+s2+m+l))<((r as real+1.0)/power2(p))-((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)));
+// }
+lemma circlecheck(p:nat,l:nat,m:nat,r:int,x1:ISeq,x2:ISeq,n1:int,n2:int)
+requires n1==x1(p+m+2)
+requires n2==x2(p+l+2)
+requires  r==(((set_z(n1,l) as real +set_z(n2,m) as real)/power2(m+l+2))+0.5).Floor
+ensures ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))+((power2(l)+power2(m))/power2(p+m+l+2))<((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2))
+{
+    /*
+    var x := (set_z(n1,l) as real +set_z(n2,m) as real)/power2(m+l+2);
+    var y := (power2(l)+power2(m))/power2(p+m+l+2);
+    assert x - 0.5 < r as real;
+    assert x < 0.5 + r as real;
+    assert x / power2(p) as real < 0.5 / power2(p) + r as real/ power2(p);
+    assert x / power2(p) as real < 1.0 / power2(p+1) + r as real/ power2(p);
+    assert power2(p+1) == 2.0*power2(p);
+    assert x / power2(p) as real < 1.0 / (2.0*power2(p)) + r as real/ power2(p);
+    prop_frac2(power2(p) as real, r as real);
+    assert 1.0 / (2.0*power2(p)) + r as real/ power2(p) == (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real < (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real + y
+        < (r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p)) + y;
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/(set_z(1,m+l+2) as real * power2(p));
+    checker1(1, m+l+2);
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/(power2(p) * power2(m+l+2));
+    powerpos(p, m+l+2);
+    assert (1.0/set_z(1,m+l+2) as real) / power2(p) == 1.0/power2(p+m+l+2);
+    assert
+       ((set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2))+((power2(l)+power2(m))/power2(p+m+l+2))
+        < ((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2));
+    */
+    circlechecks(p, l, m, x1, x2);
+}
 
 lemma circlechecks(p:nat,l:nat,m:nat,x1:ISeq,x2:ISeq)
 ensures
@@ -855,6 +1123,69 @@ ensures
         < ((r as real+1.0)/power2(p))-(1.0/power2(p+1))+((power2(l)+power2(m))/power2(p+m+l+2));
 }
 
+
+
+// lemma circlecheck2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+// requires n1==x1(p+s2+m)
+// requires n2==x2(p+s1+l)
+// requires s1== log2floor(abv(x1(z1))+2)+3
+// requires s2== log2floor(abv(x2(z2))+2)+3 
+// requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
+// ensures (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))>=((r as real-1.0)/power2(p))+((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)))
+// {
+//     assert (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))==(((n1*n2) as real)/power2(2*p+s1+s2+m+l))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l));
+//     var x := ((n1*n2) as real)/power2(p+s1+s2+m+l);
+//     var y := ((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l));
+//     assert x +0.5 >= r as real;
+//     assert x >= -0.5 + r as real;
+//     assert x / power2(p) as real >= -0.5 / power2(p) + r as real/ power2(p);
+//     assert x / power2(p) as real >= -1.0 / power2(p+1) + r as real/ power2(p);
+//     assert power2(p+1) == 2.0*power2(p);
+//     assert x / power2(p) as real >= -1.0 / (2.0*power2(p)) + r as real/ power2(p);
+//     prop_frac3(power2(p) as real, r as real);
+//     assert -1.0 / (2.0*power2(p)) + r as real/ power2(p) == (r as real - 1.0) / power2(p) + 1.0 / (2.0*power2(p));
+//     assert x / power2(p) as real >= (r as real - 1.0) / power2(p) + 1.0 / (2.0*power2(p));
+//     assert x / power2(p) as real - y
+//         <=(r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p)) - y;
+//     divwork(n1 as real*n2 as real,p+s1+s2+m+l,p);
+//     assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/(power2(p) * power2(p+s1+s2+m+l));
+//     powerpos(p, p+s1+s2+m+l);
+//     assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/power2(p+p+s1+s2+m+l);
+//     assert (1.0/power2(p+s1+s2+m+l)) / power2(p) == 1.0/power2(2*p+s1+s2+m+l);
+//     assert
+//        (n1 as real*n2 as real-abv(n1) as real-abv(n2) as real-1.0)/(power2(2*p+s1+s2+m+l))>=((r as real-1.0)/power2(p))+((1.0/power2(p+1))-((abv(n1) as real+abv(n2) as real+1.0)/power2(2*p+s1+s2+m+l)));
+// }
+
+lemma circlecheck2(p:nat,l:nat,m:nat,r:int,x1:ISeq,x2:ISeq,n1:int,n2:int)
+requires n1==x1(p+m+2)
+requires n2==x2(p+l+2)
+requires   r==(((set_z(n1,l) as real +set_z(n2,m) as real)/power2(m+l+2))+0.5).Floor
+ensures (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)>=((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2))
+{
+    /*
+    var x := (set_z(n1,l) as real +set_z(n2,m) as real)/power2(m+l+2);
+    var y := (power2(l)+power2(m))/power2(p+m+l+2);
+    assert x +0.5 >= r as real;
+    assert x >= -0.5 + r as real;
+    assert x / power2(p) as real >= -0.5 / power2(p) + r as real/ power2(p);
+    assert x / power2(p) as real >= -1.0 / power2(p+1) + r as real/ power2(p);
+    assert power2(p+1) == 2.0*power2(p);
+    assert x / power2(p) as real >= -1.0 / (2.0*power2(p)) + r as real/ power2(p);
+    prop_frac3(power2(p) as real, r as real);
+    assert -1.0 / (2.0*power2(p)) + r as real/ power2(p) == (r as real - 1.0) / power2(p) + 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real >= (r as real - 1.0) / power2(p) + 1.0 / (2.0*power2(p));
+    assert x / power2(p) as real - y
+        <=(r as real + 1.0) / power2(p) - 1.0 / (2.0*power2(p)) - y;
+    assert (1.0/power2(m+l+2)) / power2(p) == 1.0/(power2(m+l+2) * power2(p));
+    checker1(1, m+l+2);
+    assert (1.0/power2(m+l+2)) / power2(p) == 1.0/(power2(p) * power2(m+l+2));
+    powerpos(p, m+l+2);
+    assert (1.0/power2(m+l+2)) / power2(p) == 1.0/power2(p+m+l+2);
+    assert
+       (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)>=((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2));
+    */
+    circlecheck2s(p, l, m, x1, x2);
+}
 lemma circlecheck2s(p:nat,l:nat,m:nat,x1:ISeq,x2:ISeq)
 ensures
     var n1 := x1(p+m+2);
@@ -886,15 +1217,24 @@ ensures
     assert
        (set_z(n1,l)as real+set_z(n2,m)as real)/power2(p+m+l+2)-(power2(l)+power2(m))/power2(p+m+l+2)>=((r as real-1.0)/power2(p))+(1.0/power2(p+1))-((power2(l)+power2(m))/power2(p+m+l+2));
 }
-
 lemma checker1(n1:int,l:nat)
 ensures n1 as real *power2(l)==set_z(n1,l)as real
 {}
 
 
-lemma lemma6(p:nat,p':nat,x:ISeq,v:real)
+lemma {:axiom} lemma6(p:nat,p':nat,x:ISeq,v:real)
+requires p > p'
 requires DArrow(v,x)
-ensures (x(p')-1)*power(p-p')-1<x(p)<(x(p')+1)*power(p-p')+1
+ensures (x(p')-1)*power(p-p')-1 < x(p) < (x(p')+1)*power(p-p')+1
+
+lemma froml6a(p:nat,p':nat,x:ISeq,v:real)
+requires DArrow(v,x)
+requires p>p'
+ensures abv(x(p))+1 < power(p-p') * (abv(x(p')) + 1) + 2
+{
+    lemma6(p, p', x, v);
+    assert x(p)<(x(p')+1)*power(p-p')+1;
+}
 
 lemma froml6(p:nat,p':nat,x:ISeq,v:real)
 requires DArrow(v,x)
@@ -910,87 +1250,530 @@ ensures abv(x(p))+1<power((p-p'))*(abv(x(p'))+2)
     assert abv(x(p))+1<power((p-p'))*(abv(x(p'))+2);
 }
 
-lemma lemma5(n:int,m:nat)
-requires m>0
+lemma {:axiom} lemma5(n:int,m:nat)
+requires m > 0
 requires n==log2floor(m)
-ensures power(n)<=m<power(n)
+// ensures power(n) <= m < power(n)
+ensures power(n) <= m < power(n+1)
 
-lemma following(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3
-ensures abv(n1)+1<power(p+s1+s2+m-z1-2)
-{
-    //assert s1-3==log2floor(abv(x1(z1))+2);
-    lemma5(s1-3,abv(x1(z1))+2);
-    //assert abv(x1(z1))+2<power(s1-2);
-}
-
-
-lemma following2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3
-ensures abv(n2)+1<power(p+s1+s2+l-z2-2)
-{
-    lemma5(s2-3,abv(x2(z2))+2);
-}
-
-lemma thus (v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3
-ensures abv(n1)+abv(n2)+1<power(p+s1+s2+m+l-1)
-{
-    following(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2);
-    following2(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2);
-    assert abv(n1)+1+abv(n2)+1<power(p+s1+s2+m-z1-2)+power(p+s1+s2+l-z2-2);
-    powerpos'(p+s1+s2-2,m-z1);
-    powerpos'(p+s1+s2-2,l-z2);
-    assert abv(n1)+abv(n2)+1<(power(p+s1+s2-2))*(power(m-z1)+power(l-z2))-1;
-    assert abv(n1)+abv(n2)+1<power(p+s1+s2+m+l-1);
-}
-
-/*lemma mult2sup1(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3 
-requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures abv(n1)+abv(n2)+1<=power(p+s1+s2+m+l-1)
-{
-
-}
-
-/*lemma mult2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
-requires DArrow(v1,x1)
-requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3 
-requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures (r-1) as real/power2(p)<v1*v2<(r+1) as real/power2(p)
+lemma inequality0(a: int, b: int, c: int)
+    requires a < b
+    requires c > 0
+    ensures c * a < c * b
+{}
+lemma inequality11(a: real, b: real, c: real, d: real)
+    requires a <= b
+    requires c <= d
+    ensures a + c <= b + d
+{}
+lemma inequality2(a: real, b: real, c: real)
+    requires a <= b
+    requires c > 0.0
+    ensures c * a <= c * b
 {}
 
-lemma mult(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq,r:int)
+// lemma following(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
+// requires DArrow(v1,x1)
+// requires DArrow(v2,x2)
+// requires n1==x1(p+s2+m)
+// requires n2==x2(p+s1+l)
+// requires z1 < 4
+// requires z2 < 4
+// requires s1== log2floor(abv(x1(z1))+2)+3
+// requires s2== log2floor(abv(x2(z2))+2)+3
+// ensures abv(n1)+1<power(p+s1+s2+m-z1-2)
+// {
+//     if p+s2+m > z1 {
+
+//         var part1 := abv(n1) + 1;
+//         var powps2m := power(p+s2+m-z1);
+//         var abvx1z1 := abv(x1(z1))+2;
+//         // var part2 := power(p+s2+m-z1) * (abv(x1(z1))+2);
+//         var part2 := powps2m * abvx1z1;
+//         froml6(p+s2+m, z1, x1, v1);
+//         // assert abv(x1(p+s2+m))+1 < power(p+s2+m-z1) * (abv(x1(z1))+2);
+//         // assert abv(n1)+1 < power(p+s2+m-z1) * (abv(x1(z1))+2);
+//         assert part1 < part2;
+
+//         // [subgoal]
+//         // assert power(p+s2+m-z1) * (abv(x1(z1) + 2)) < power(p+s1+s2+m-z1-2);
+//         // assert powps2m * abvx1z1 < power(p+s1+s2+m-z1-2);
+
+//         var n := log2floor(abvx1z1);
+//         lma5'(n, abvx1z1);
+//         assert abvx1z1 < power(n + 1);
+
+//         power1sup(p+s2+m-z1);
+//         assert powps2m > 0;
+//         inequality0(abvx1z1, power(n + 1), powps2m);
+//         assert part2 == powps2m * abvx1z1 < powps2m * power(n + 1);
+//         assert n + 1 == s1 - 2;
+//         assert part2 < powps2m * power(s1 - 2);
+//         calc {
+//             power(p+s2+m-z1) * power(s1 - 2);
+//             { power1pos(p+s2+m-z1, s1 - 2); }
+//             power((p+s2+m-z1) + (s1-2));
+//             power(p+s1+s2+m-z1-2);
+//         }
+//         assert part1 < part2 < power(p+s1+s2+m-z1-2); // goal
+    
+//     } else {
+//         assert false;
+//     }
+// }
+
+lemma followings(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
 requires DArrow(v1,x1)
 requires DArrow(v2,x2)
-requires n1==x1(p+s2+m)
-requires n2==x2(p+s1+l)
-requires s1== log2floor(abv(x1(z1))+2)+3
-requires s2== log2floor(abv(x2(z2))+2)+3 
-requires r==(((n1*n2) as real/power2(p+s1+s2+m+l))+0.5).Floor
-ensures DArrow(v1*v2,mul_a(x1,x2,z1,z2,m,l))
+requires z1 < 4
+requires z2 < 4
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+        abv(n1)+1<power(p+s1+s2+m-z1-2)
+{
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+
+    if p+s2+m > z1 {
+
+        var part1 := abv(n1) + 1;
+        var powps2m := power(p+s2+m-z1);
+        var abvx1z1 := abv(x1(z1))+2;
+        // var part2 := power(p+s2+m-z1) * (abv(x1(z1))+2);
+        var part2 := powps2m * abvx1z1;
+        froml6(p+s2+m, z1, x1, v1);
+        // assert abv(x1(p+s2+m))+1 < power(p+s2+m-z1) * (abv(x1(z1))+2);
+        // assert abv(n1)+1 < power(p+s2+m-z1) * (abv(x1(z1))+2);
+        assert part1 < part2;
+
+        // [subgoal]
+        // assert power(p+s2+m-z1) * (abv(x1(z1) + 2)) < power(p+s1+s2+m-z1-2);
+        // assert powps2m * abvx1z1 < power(p+s1+s2+m-z1-2);
+
+        var n := log2floor(abvx1z1);
+        lma5'(n, abvx1z1);
+        assert abvx1z1 < power(n + 1);
+
+        power1sup(p+s2+m-z1);
+        assert powps2m > 0;
+        inequality0(abvx1z1, power(n + 1), powps2m);
+        assert part2 == powps2m * abvx1z1 < powps2m * power(n + 1);
+        assert n + 1 == s1 - 2;
+        assert part2 < powps2m * power(s1 - 2);
+        calc {
+            power(p+s2+m-z1) * power(s1 - 2);
+            { power1pos(p+s2+m-z1, s1 - 2); }
+            power((p+s2+m-z1) + (s1-2));
+            power(p+s1+s2+m-z1-2);
+        }
+        assert part1 < part2 < power(p+s1+s2+m-z1-2); // goal
+    
+    } else {
+        assert false;
+    }
+}
+
+// lemma following2(v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
+// requires DArrow(v1,x1)
+// requires DArrow(v2,x2)
+// requires n1==x1(p+s2+m)
+// requires n2==x2(p+s1+l)
+// requires z1 < 4
+// requires z2 < 4
+// requires s1== log2floor(abv(x1(z1))+2)+3
+// requires s2== log2floor(abv(x2(z2))+2)+3
+// ensures abv(n2)+1<power(p+s1+s2+l-z2-2)
+// {
+//     // copy of the body of "following"
+//     if p+s1+l > z2 {
+
+//         var part1 := abv(n2) + 1;
+//         var powps1l := power(p+s1+l-z2);
+//         var abvx2z2 := abv(x2(z2))+2;
+//         var part2 := powps1l * abvx2z2;
+//         froml6(p+s1+l, z2, x2, v2);
+//         assert part1 < part2;
+
+//         var n := log2floor(abvx2z2);
+//         lma5'(n, abvx2z2);
+//         assert abvx2z2 < power(n + 1);
+
+//         power1sup(p+s1+l-z2);
+//         assert powps1l > 0;
+//         inequality0(abvx2z2, power(n + 1), powps1l);
+//         assert part2 == powps1l * abvx2z2 < powps1l * power(n + 1);
+//         assert n + 1 == s2 - 2;
+//         assert part2 < powps1l * power(s2 - 2);
+//         calc {
+//             power(p+s1+l-z2) * power(s2 - 2);
+//             { power1pos(p+s1+l-z2, s2 - 2); }
+//             power((p+s1+l-z2) + (s2-2));
+//             power(p+s1+s2+l-z2-2);
+//         }
+//         assert part1 < part2 < power(p+s1+s2+l-z2-2); // goal
+    
+//     } else {
+//         assert false;
+//     }
+// }
+
+lemma following2s(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+// requires n1==x1(p+s2+m)
+// requires n2==x2(p+s1+l)
+requires z1 < 4
+requires z2 < 4
+// requires s1== log2floor(abv(x1(z1))+2)+3
+// requires s2== log2floor(abv(x2(z2))+2)+3
+// ensures abv(n2)+1<power(p+s1+s2+l-z2-2)
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n2 := x2(p+s1+l);
+        abv(n2)+1<power(p+s1+s2+l-z2-2)
+
+{
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+
+    // copy of the body of "following"
+    if p+s1+l > z2 {
+
+        var part1 := abv(n2) + 1;
+        var powps1l := power(p+s1+l-z2);
+        var abvx2z2 := abv(x2(z2))+2;
+        var part2 := powps1l * abvx2z2;
+        froml6(p+s1+l, z2, x2, v2);
+        assert part1 < part2;
+
+        var n := log2floor(abvx2z2);
+        lma5'(n, abvx2z2);
+        assert abvx2z2 < power(n + 1);
+
+        power1sup(p+s1+l-z2);
+        assert powps1l > 0;
+        inequality0(abvx2z2, power(n + 1), powps1l);
+        assert part2 == powps1l * abvx2z2 < powps1l * power(n + 1);
+        assert n + 1 == s2 - 2;
+        assert part2 < powps1l * power(s2 - 2);
+        calc {
+            power(p+s1+l-z2) * power(s2 - 2);
+            { power1pos(p+s1+l-z2, s2 - 2); }
+            power((p+s1+l-z2) + (s2-2));
+            power(p+s1+s2+l-z2-2);
+        }
+        assert part1 < part2 < power(p+s1+s2+l-z2-2); // goal
+    
+    } else {
+        assert false;
+    }
+}
+
+
+// lemma thus (v1:real,v2:real,p:nat,s1:nat,s2:nat,z1:nat,z2:nat,m:nat,l:nat,n1:int,n2:int,x1:ISeq,x2:ISeq)
+// requires DArrow(v1,x1)
+// requires DArrow(v2,x2)
+// requires n1==x1(p+s2+m)
+// requires n2==x2(p+s1+l)
+// requires z1 < 4
+// requires z2 < 4
+// requires s1== log2floor(abv(x1(z1))+2)+3
+// requires s2== log2floor(abv(x2(z2))+2)+3
+// // ensures abv(n1)+abv(n2)+1 < power(p+s1+s2+m+l-1)
+// // ensures abv(n1)+abv(n2)+1 < power2int(p+s1+s2+m+l-1)
+// {        
+//     // assert abv(n1) + abv(n2) + 1 < power(p+s1+s2+m-z1-2) + power(p+s1+s2+l-z2-2) - 1 by {
+//     following(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2);
+//     // followings(v1,v2,p,z1,z2,m,l,x1,x2);
+//     assert abv(n1) + 1 < power(p+s1+s2+m-z1-2);
+//     following2(v1,v2,p,s1,s2,z1,z2,m,l,n1,n2,x1,x2);
+//     // following2s(v1,v2,p,z1,z2,m,l,x1,x2);
+//     assert abv(n2) + 1 < power(p+s1+s2+l-z2-2);
+//     assert abv(n1) + 1 + abv(n2) + 1 < power(p+s1+s2+m-z1-2) + power(p+s1+s2+l-z2-2);
+//     assert abv(n1) + abv(n2) + 1 < power(p+s1+s2+m-z1-2) + power(p+s1+s2+l-z2-2) - 1;
+//     // }
+//     var ps1s2 := p+s1+s2;
+//     var ps1s2mz1 := ps1s2+m-z1-2;
+//     var ps1s2lz2 := ps1s2+l-z2-2;
+//     assert abv(n1) + abv(n2) + 1 < power(ps1s2mz1) + power(ps1s2lz2) - 1;
+//     assert (ps1s2-2)+(m-z1) >= 0;
+
+//     assert power(ps1s2mz1) as real == power2int(ps1s2-2)*power2int(m-z1) by {
+
+//     // assert power(ps1s2mz1) as real == power((ps1s2-2)+(m-z1)) as real;
+//     // powerpower2int((ps1s2-2)+(m-z1));
+//     // assert power((ps1s2-2)+(m-z1)) as real == power2int((ps1s2-2)+(m-z1));
+//     // power2intpos(ps1s2-2, m-z1);
+//     // assert power2int((ps1s2-2)+(m-z1)) == power2int(ps1s2-2)*power2int(m-z1);
+//     calc {
+//         power(ps1s2mz1) as real;
+//         power((ps1s2-2)+(m-z1)) as real;
+//         { powerpower2int((ps1s2-2)+(m-z1)); }
+//         power2int((ps1s2-2)+(m-z1));
+//         { power2intpos(ps1s2-2, m-z1); }
+//         // { assert power2int((ps1s2-2)+(m-z1)) == power2int(ps1s2-2)*power2int(m-z1); }
+//         power2int(ps1s2-2)*power2int(m-z1);
+//     }
+//     // calc {
+//     //     power(ps1s2mz1) as real;
+//     //     { powerpower2int(ps1s2mz1); }
+//     //     power2int(ps1s2mz1);
+//     //     power2int((ps1s2-2)+(m-z1));
+//     //     { power2intpos(ps1s2-2, m-z1); }
+//     //     // { assert power2int((ps1s2-2)+(m-z1)) == power2int(ps1s2-2)*power2int(m-z1); }
+//     //     power2int(ps1s2-2)*power2int(m-z1);
+//     // }
+//     }
+//     // assert (ps1s2-2)+(l-z2) >= 0;
+//     // assert power(ps1s2lz2) as real == power2int(ps1s2-2)*power2int(l-z2) by {
+//     calc {
+//         power(ps1s2lz2) as real;
+//         power((ps1s2-2)+(l-z2)) as real;
+//         { powerpower2int((ps1s2-2)+(l-z2)); }
+//         power2int((ps1s2-2)+(l-z2));
+//         { power2intpos(ps1s2-2, l-z2); }
+//         // { assert power2int((ps1s2-2)+(l-z2)) == power2int(ps1s2-2)*power2int(l-z2); }
+//         power2int(ps1s2-2)*power2int(l-z2);
+//     }
+//     // }
+//     // var ex1 := abv(n1) as real + abv(n2) as real + 1.0;
+//     // var ex2 := power(ps1s2mz1) as real + power(ps1s2lz2) as real - 1.0;
+//     // var ex3 := power2int(ps1s2-2)*power2int(m-z1) + power2int(ps1s2-2)*power2int(l-z2) - 1.0;
+//     // var ex4 := power2int(ps1s2-2)*(power2int(m-z1) + power2int(l-z2)) - 1.0;
+//     // assert ex1 < ex2;
+//     assert abv(n1) as real + abv(n2) as real + 1.0
+//         < power(ps1s2mz1) as real + power(ps1s2lz2) as real - 1.0;
+//     assert power(ps1s2mz1) as real + power(ps1s2lz2) as real - 1.0
+//         == power2int(ps1s2-2)*power2int(m-z1) + power2int(ps1s2-2)*power2int(l-z2) - 1.0;
+//     assert power2int(ps1s2-2)*power2int(m-z1) + power2int(ps1s2-2)*power2int(l-z2) - 1.0
+//         == power2int(ps1s2-2)*(power2int(m-z1) + power2int(l-z2)) - 1.0;
+
+//     // assert abv(n1) as real + abv(n2) as real + 1.0
+//     //      < power2int(ps1s2-2)*(power2int(m-z1) + power2int(l-z2)) - 1.0;
+//     // powerpos'(p+s1+s2-2,m-z1);
+//     // // powerpos'(p+s1+s2-2,l-z2);
+//     // // assert abv(n1)+abv(n2)+1<(power(p+s1+s2-2))*(power(m-z1)+power(l-z2))-1;
+//     // // assert abv(n1)+abv(n2)+1<power(p+s1+s2+m+l-1);
+// }
+
+
+lemma leftInequalitySub1(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires z1 < 4
+requires z2 < 4
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    abv(n1) + abv(n2) + 1 < power(p+s1+s2+m-z1-2) + power(p+s1+s2+l-z2-2) - 1
+{
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    followings(v1,v2,p,z1,z2,m,l,x1,x2);
+    assert abv(n1) + 1 < power(p+s1+s2+m-z1-2);
+    following2s(v1,v2,p,z1,z2,m,l,x1,x2);
+    assert abv(n2) + 1 < power(p+s1+s2+l-z2-2);
+    assert abv(n1) + 1 + abv(n2) + 1 < power(p+s1+s2+m-z1-2) + power(p+s1+s2+l-z2-2);
+    assert abv(n1) + abv(n2) + 1 < power(p+s1+s2+m-z1-2) + power(p+s1+s2+l-z2-2) - 1;
+}
+
+
+
+lemma leftInequalitySub2(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires z1 < 4
+requires z2 < 4
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    var ps1s2 := p+s1+s2;
+    var ps1s2mz1 := ps1s2+m-z1-2;
+    power(ps1s2mz1) as real == power2int(ps1s2-2)*power2int(m-z1)
+{
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    var ps1s2 := p+s1+s2;
+    var ps1s2mz1 := ps1s2+m-z1-2;
+    assert power(ps1s2mz1) as real == power((ps1s2-2)+(m-z1)) as real;
+    powerpower2int((ps1s2-2)+(m-z1));
+    assert power((ps1s2-2)+(m-z1)) as real == power2int((ps1s2-2)+(m-z1));
+    power2intpos(ps1s2-2, m-z1);
+    assert power2int((ps1s2-2)+(m-z1)) == power2int(ps1s2-2)*power2int(m-z1);
+}
+
+lemma leftInequalitySub2'(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires z1 < 4
+requires z2 < 4
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    var ps1s2 := p+s1+s2;
+    var ps1s2lz2 := ps1s2+l-z2-2;
+    power(ps1s2lz2) as real == power2int(ps1s2-2)*power2int(l-z2)
+{
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    var ps1s2 := p+s1+s2;
+    var ps1s2lz2 := ps1s2+l-z2-2;
+    assert power(ps1s2lz2) as real == power((ps1s2-2)+(l-z2)) as real;
+    powerpower2int((ps1s2-2)+(l-z2));
+    assert power((ps1s2-2)+(l-z2)) as real == power2int((ps1s2-2)+(l-z2));
+    power2intpos(ps1s2-2, l-z2);
+    assert power2int((ps1s2-2)+(l-z2)) == power2int(ps1s2-2)*power2int(l-z2);
+}
+
+lemma leftInequality(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires z1 < 4
+requires z2 < 4
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    abv(n1) as real + abv(n2) as real + 1.0
+    < power2int(p+s1+s2-2)*(power2int(m-z1) + power2int(l-z2)) - 1.0
+{        
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    var ps1s2 := p+s1+s2;
+    leftInequalitySub1(v1, v2, p, z1, z2, m, l, x1, x2);
+    assert abv(n1) + abv(n2) + 1 < power(p+s1+s2+m-z1-2) + power(p+s1+s2+l-z2-2) - 1;
+    assert abv(n1) + abv(n2) + 1 < power(ps1s2+m-z1-2) + power(ps1s2+l-z2-2) - 1;
+    assert (ps1s2-2)+(m-z1) >= 0;
+    leftInequalitySub2(v1, v2, p, z1, z2, m, l, x1, x2);
+    assert (ps1s2-2)+(l-z2) >= 0;
+    leftInequalitySub2'(v1, v2, p, z1, z2, m, l, x1, x2);
+    assert abv(n1) as real + abv(n2) as real + 1.0
+        < power(ps1s2+m-z1-2) as real + power(ps1s2+l-z2-2) as real - 1.0;
+}
+
+
+
+lemma middleInequality(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var ml := if m >= l then m else l;
+    var zz := if z1 >= z2 then z2 else z1;
+    var mz1 := power2int(m-z1);
+    var lz2 := power2int(l-z2);
+    power2int(p+s1+s2-2)*(power2int(m-z1) + power2int(l-z2)) - 1.0
+    <= power2int(p+s1+s2-1)*power2int(ml-zz) - 1.0
+{
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var ps1s2 := p+s1+s2;
+    var ml := if m >= l then m else l;
+    var zz := if z1 >= z2 then z2 else z1;
+    var powmlzz := power2int(ml-zz);
+
+    var mz1 := power2int(m-z1);
+    var lz2 := power2int(l-z2);
+
+    power2intorder(ml-zz, m-z1); // 1st term
+    assert mz1 <= powmlzz;
+    power2intorder(ml-zz, l-z2); // 2nd term
+    assert lz2 <= powmlzz;
+
+    inequality11(mz1, powmlzz, lz2, powmlzz);
+    assert mz1 + lz2 <= powmlzz + powmlzz;
+    inequality2(mz1 + lz2, powmlzz + powmlzz, power2int(ps1s2-2));
+    calc {
+        power2int(ps1s2-2)*(mz1 + lz2) - 1.0;
+        <= power2int(ps1s2-2)*(powmlzz + powmlzz) - 1.0;
+        power2int(ps1s2-1)*powmlzz - 1.0;
+    }
+    assert 
+        power2int(ps1s2-2)*(mz1 + lz2) - 1.0
+        <= power2int(ps1s2-1)*powmlzz - 1.0;
+}
+
+lemma three_reals(factor: real, a: real, b: real)
+    requires factor >= 0.0
+    requires a <= b
+    ensures factor * a - 1.0 < factor * b
 {}
+
+lemma rightInequality(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var ml := if m >= l then m else l;
+    var zz := if z1 >= z2 then z2 else z1;
+    power2int(p+s1+s2-1)*power2int(ml-zz) - 1.0
+    < power2int(p+s1+s2+m+l-1)
+{
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var ml := if m >= l then m else l;
+    var zz := if z1 >= z2 then z2 else z1;
+    var small := power2int(ml-zz);
+    var large := power2int(m+l);
+    var factor := power2int(p+s1+s2-1);
+    assert factor >= 0.0;
+    assert ml-zz <= m+l;
+    power2intorder(m+l, ml-zz);
+    assert small <= large;
+    three_reals(power2int(p+s1+s2-1), power2int(ml-zz), power2int(m+l));
+    assert power2int(p+s1+s2-1)*power2int(ml-zz) - 1.0 < power2int(p+s1+s2-1)*power2int(m+l);    
+    power2intpos(p+s1+s2-1, m+l);
+    assert power2int(p+s1+s2-1)*power2int(m+l) == power2int((p+s1+s2-1)+(m+l));
+    assert (p+s1+s2-1)+(m+l) == p+s1+s2+m+l-1;
+    assert power2int((p+s1+s2-1)+(m+l)) == power2int(p+s1+s2+m+l-1);
+    calc {
+        power2int(p+s1+s2-1)*power2int(ml-zz) - 1.0;
+    <   power2int(p+s1+s2-1)*power2int(m+l);
+        power2int(p+s1+s2+m+l-1);
+    }
+}
+
+
+lemma mul_core(v1:real,v2:real,p:nat,z1:nat,z2:nat,m:nat,l:nat,x1:ISeq,x2:ISeq)
+requires DArrow(v1,x1)
+requires DArrow(v2,x2)
+requires z1 < 4
+requires z2 < 4
+ensures 
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    var n1 := x1(p+s2+m);
+    var n2 := x2(p+s1+l);
+    abv(n1) as real + abv(n2) as real + 1.0
+    < power2int(p+s1+s2+m+l-1)
+{
+    var s1 := log2floor(abv(x1(z1))+2)+3;
+    var s2 := log2floor(abv(x2(z2))+2)+3;
+    leftInequality(v1, v2, p, z1, z2, m, l, x1, x2);
+    middleInequality(v1, v2, p, z1, z2, m, l, x1, x2);
+    rightInequality(v1, v2, p, z1, z2, m, l, x1, x2);
+}
